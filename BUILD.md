@@ -250,6 +250,24 @@ then you should retry after removing the Conan cache:
 rm -rf ~/.conan/data
 ```
 
+#### Boost Build Error
+
+If you encounter the following error during your build:
+
+```
+boost/1.77.0: ERROR: Package '12a0259a3874809e8c87bd0624bf06329b6d5b82' build failed
+boost/1.77.0: WARN: Build folder /Users/{username}/.conan/data/boost/1.77.0/_/_/build/12a0259a3874809e8c87bd0624bf06329b6d5b82/build-release
+ERROR: boost/1.77.0: Error in build() method, line 887
+        self.run(full_command)
+        ConanException: Error 1 while executing b2 -q numa=on target-os=darwin architecture=arm address-model=64 binary-format=mach-o abi=aapcs ...
+```
+
+Then try the following commands to build boost from source:
+
+```
+conan remove boost -f
+conan install boost/1.77.0@ --build
+```
 
 #### no std::result_of
 
