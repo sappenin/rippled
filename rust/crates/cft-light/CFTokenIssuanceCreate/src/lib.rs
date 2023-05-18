@@ -50,13 +50,25 @@ impl Transactor for CFTokenIssuanceCreate {
     fn tx_format() -> Vec<SOElement> {
         vec![
             SOElement {
-                field_code: field_code(24, 1),
+                field_code: field_code(17, 5), // AssetCode
+                style: SOEStyle::soeREQUIRED,
+            },
+            SOElement {
+                field_code: field_code(16, 19), // AssetScale
+                style: SOEStyle::soeREQUIRED,
+            },
+            SOElement {
+                field_code: field_code(1, 4), // TransferFee
                 style: SOEStyle::soeOPTIONAL,
             },
-            /*SOElement {
-                field_code: sfTicketSequence().getCode(),
+            SOElement {
+                field_code: field_code(3, 20), // MaximumAmount
+                style: SOEStyle::soeREQUIRED,
+            },
+            SOElement {
+                field_code: field_code(7, 22), // Metadata
                 style: SOEStyle::soeOPTIONAL,
-            },*/
+            },
         ]
     }
 }
