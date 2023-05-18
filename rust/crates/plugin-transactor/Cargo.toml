@@ -9,3 +9,4 @@ edition = "2021"
 cxx = "1.0.94"
 rippled-bridge = {path = "../rippled-bridge"}
 xrpl-rust-sdk-core = {path = "../../../../xrpl-rust-sdk/xrpl-rust-sdk-core"}
+#xrpl-rust-sdk-core = {path = "../../../../../../github/xpring-eng/xrpl-rust-sdk/xrpl-rust-sdk-core"}
