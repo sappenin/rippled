@@ -4,5 +4,4 @@ members = [
     "crates/rippled-bridge",
     "crates/plugin-transactor",
     "crates/dummy_tx",
-    "crates/cft_issuance_create"
 ]
