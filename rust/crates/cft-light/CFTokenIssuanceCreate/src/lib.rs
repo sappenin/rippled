@@ -141,9 +141,9 @@ pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
 
 // Things we need:
 // 1. New SType called CFTAmount (don't need until Payment)
-// 2. New SFields for CFTokenIssuanceCreate
-// 2. New ledger object called CFTokenIssuance
-// 3. New ledger object called CFToken
+// 2. New SFields for CFTokenIssuanceCreate [DONE (in C++)]
+// 2. New ledger object called CFTokenIssuance [DONE (in C++)]
+// 3. New ledger object called CFToken [DONE (in C++)]
 // 4. New transactor CFTokenIssuanceCreate
 // 5. Add new ledger objects to LedgerEntry.cpp doLedgerEntry RPC handler
 // 6. Add keylets to look up CFTokenIssuances by
