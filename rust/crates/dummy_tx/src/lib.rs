@@ -5,10 +5,10 @@ use std::vec;
 use cxx::{CxxString, CxxVector, let_cxx_string, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
-use xrpl_rust_sdk_core::core::types::AccountId;
-use plugin_transactor::{Feature, PreclaimContext, preflight1, preflight2, PreflightContext, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
+use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
+use plugin_transactor::{ApplyContext, Feature, get_fields, minimum_fee, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::SOElement;
-use rippled_bridge::{CreateNewSFieldPtr, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TEMcodes, TER, TEScodes, XRPAmount};
+use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerSpecificFlags, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
 
 struct DummyTx2;
@@ -44,16 +44,39 @@ impl Transactor for DummyTx2 {
         TEScodes::tesSUCCESS.into()
     }
 
+    fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
+        let (tx, view, app, base_fee) = get_fields(ctx);
+        let account = tx.get_account_id(&SField::sf_account());
+        let maybe_sle = view.peek(&Keylet::account(&account));
+
+        if maybe_sle.is_none() {
+            return TEFcodes::tefINTERNAL.into()
+        } else {
+            let sle = maybe_sle.unwrap();
+            if minimum_fee(app, base_fee, view.fees(), view.flags()) == XrpAmount::of_drops(0).unwrap() {
+                sle.set_flag(LedgerSpecificFlags::lsfPasswordSpent);
+            }
+
+            let sf_regularkey_2 = &SField::get_plugin_field(24, 1);
+            if tx.is_field_present(sf_regularkey_2) {
+                sle.set_plugin_type(sf_regularkey_2, &tx.get_plugin_type(sf_regularkey_2));
+            } else {
+                if sle.is_flag(LedgerSpecificFlags::lsfDisableMaster) && !view.peek(&Keylet::signers(&account)).is_none() {
+                    return TECcodes::tecNO_ALTERNATIVE_KEY.into();
+                }
+
+                sle.make_field_absent(sf_regularkey_2);
+            }
+            return TEScodes::tesSUCCESS.into();
+        }
+    }
+
     fn tx_format() -> Vec<SOElement> {
         vec![
             SOElement {
                 field_code: field_code(24, 1),
                 style: SOEStyle::soeOPTIONAL,
             },
-            /*SOElement {
-                field_code: sfTicketSequence().getCode(),
-                style: SOEStyle::soeOPTIONAL,
-            },*/
         ]
     }
 }
@@ -75,12 +98,12 @@ pub fn preclaim(ctx: &rippled::PreclaimContext) -> TER {
 
 #[no_mangle]
 pub unsafe fn calculateBaseFee(view: &rippled::ReadView, tx: &rippled::STTx) -> XRPAmount {
-    DummyTx2::calculateBaseFee(view, STTx::new(tx)).into()
+    DummyTx2::calculate_base_fee(ReadView::new(view), STTx::new(tx)).into()
 }
 
 #[no_mangle]
 pub fn doApply(mut ctx: Pin<&mut rippled::ApplyContext>, mPriorBalance: rippled::XRPAmount, mSourceBalance: rippled::XRPAmount) -> TER {
-    rippled_bridge::do_apply(ctx, mPriorBalance, mSourceBalance)
+    DummyTx2::do_apply(&mut ApplyContext::new(&mut ctx.as_mut()), mPriorBalance.into(), mSourceBalance.into())
 }
 
 #[no_mangle]
