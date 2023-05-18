@@ -8,53 +8,15 @@ use cxx::kind::Trivial;
 use cxx::vector::VectorElement;
 use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
 
-pub mod dummy_tx_rs;
 pub mod ter;
 pub mod flags;
 
-pub use dummy_tx_rs::pre_flight;
-pub use dummy_tx_rs::pre_claim;
-pub use dummy_tx_rs::do_apply;
 pub use ter::{TER, NotTEC, TEFcodes, TEMcodes, TELcodes, TECcodes, TEScodes, TERcodes};
 pub use flags::{LedgerSpecificFlags, ApplyFlags};
 use crate::rippled::{OptionalSTVar, SerialIter, SField, STBase, STPluginType, Value};
 
-// Also try this
-/*#[no_mangle]
-pub fn preflight(ctx: &rippled::PreflightContext) -> NotTEC {
-    pre_flight(ctx)
-}
-
-#[no_mangle]
-pub fn preclaim(ctx: &rippled::PreclaimContext) -> TER {
-    pre_claim(ctx)
-}
-
-#[no_mangle]
-pub fn calculateBaseFee(view: &rippled::ReadView, tx: &rippled::STTx) -> XRPAmount {
-    rippled::defaultCalculateBaseFee(view, tx)
-}
-
-#[no_mangle]
-pub fn doApply(mut ctx: Pin<&mut rippled::ApplyContext>, mPriorBalance: rippled::XRPAmount, mSourceBalance: rippled::XRPAmount) -> TER {
-    do_apply(ctx, mPriorBalance, mSourceBalance)
-}*/
-
-
 #[cxx::bridge]
 pub mod rippled {
-
-    // TODO: Make these match whats in SetTrust.cpp
-    /*pub struct STypeExport {
-        pub type_id: i32,
-        // pub create_ptr: fn(tid: i32, fv: i32, f_name: *const c_char)
-    }*/
-
-    /*pub struct SFieldInfo {
-        pub type_id: i32,
-        pub field_value: i32,
-        pub txt_name: *const c_char
-    }*/
 
     extern "Rust" {
         // This function is unused, but exists only to ensure that line 11's interface is bridge
@@ -112,9 +74,9 @@ pub mod rippled {
         pub type STObject;
         type Keylet = super::Keylet;
         type LedgerEntryType = super::LedgerEntryType;
-        pub(crate) type SLE;
-        type Application;
-        type Fees;
+        pub type SLE;
+        pub type Application;
+        pub type Fees;
         type ApplyFlags = super::ApplyFlags;
         pub type FakeSOElement /*= super::FakeSOElement*/;
         type SOEStyle = super::SOEStyle;
@@ -197,13 +159,13 @@ pub mod rippled {
         pub fn upcast(stTx: &STTx) -> &STObject;
 
         pub fn toBase58(v: &AccountID) -> UniquePtr<CxxString>;
-        pub fn view(self: Pin<&mut ApplyContext>) -> Pin<&mut ApplyView>;
+        pub fn view<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut ApplyView>;
         pub fn getBaseFee<'a>(self: Pin<&'a mut ApplyContext>) -> XRPAmount;
-        pub fn getTx(self: &ApplyContext) -> &STTx;
+        pub fn getTx<'a, 'b>(self: &'a ApplyContext) -> &'b STTx;
         pub fn getApp<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut Application>;
 
         pub fn peek(self: Pin<&mut ApplyView>, k: &Keylet) -> SharedPtr<SLE>;
-        pub fn fees(self: &ApplyView) -> &Fees;
+        pub fn fees<'a, 'b>(self: &'a ApplyView) -> &'b Fees;
         pub fn flags(self: &ApplyView) -> ApplyFlags;
 
         // pub fn setFlag(self: Pin<&mut SLE>, f: u32) -> bool;
@@ -299,22 +261,6 @@ unsafe impl ExternType for STypeFromSFieldFnPtr {
     type Kind = Trivial;
 }
 
-/*pub struct SLE {
-    sle: SharedPtr<rippled::SLE>
-}
-
-impl SLE {
-    pub fn setFlag(&self, f: u32) -> bool {
-        rippled::setFlag(&self.sle, f)
-    }
-}*/
-
-/*#[repr(C)]
-pub struct STypeExport {
-    pub type_id: i32,
-    pub create_ptr: fn(tid: i32, fv: i32, f_name: *const c_char) -> &'static TypedSTPluginType,
-}*/
-
 #[repr(C)]
 #[derive(PartialEq)]
 pub struct AccountID {
@@ -324,6 +270,14 @@ pub struct AccountID {
 impl From<AccountID> for AccountId {
     fn from(value: AccountID) -> Self {
         AccountId::from(value.data_)
+    }
+}
+
+impl From<&AccountId> for AccountID {
+    fn from(value: &AccountId) -> Self {
+        AccountID {
+            data_: value.as_ref().try_into().unwrap()
+        }
     }
 }
 
@@ -511,6 +465,16 @@ pub struct Keylet {
     // Also test this, since key is a uint256 which has a data_ field
     key: [u8; 32],
     r#type: LedgerEntryType
+}
+
+impl Keylet {
+    pub fn account(account_id: &AccountId) -> Self {
+        rippled::account(&account_id.into())
+    }
+
+    pub fn signers(account_id: &AccountId) -> Self {
+        rippled::signers(&account_id.into())
+    }
 }
 
 unsafe impl cxx::ExternType for Keylet {
