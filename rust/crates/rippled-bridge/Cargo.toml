@@ -11,8 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 cxx = "1.0.94"
-xrpl-rust-sdk-core = { path = "../../../../xrpl-rust-sdk/xrpl-rust-sdk-core" }
-#xrpl-rust-sdk-core = {path = "../../../../../../github/xpring-eng/xrpl-rust-sdk/xrpl-rust-sdk-core"}
+xrpl-rust-sdk-core = { workspace = true }
 
 [build-dependencies]
 cxx-build = "1.0.94"
