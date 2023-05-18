@@ -1,12 +1,12 @@
-/*use std::ffi::{c_char, CString};
+use std::ffi::{c_char, CString};
 use std::pin::Pin;
 use std::str::Utf8Error;
 use std::vec;
 use cxx::{CxxString, CxxVector, let_cxx_string, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
-use xrpl_rust_sdk_core::core::types::AccountId;
-use plugin_transactor::{Feature, PreclaimContext, preflight1, preflight2, PreflightContext, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
+use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
+use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::SOElement;
 use rippled_bridge::{CreateNewSFieldPtr, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
@@ -41,6 +41,10 @@ impl Transactor for CFTokenIssuanceCreate {
 
     fn pre_claim(ctx: PreclaimContext) -> TER {
         TEScodes::tesSUCCESS.into()
+    }
+
+    fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
+        todo!()
     }
 
     fn tx_format() -> Vec<SOElement> {
@@ -135,6 +139,17 @@ pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
 }
 
 
+// Things we need:
+// 1. New SType called CFTAmount (don't need until Payment)
+// 2. New SFields for CFTokenIssuanceCreate
+// 2. New ledger object called CFTokenIssuance
+// 3. New ledger object called CFToken
+// 4. New transactor CFTokenIssuanceCreate
+// 5. Add new ledger objects to LedgerEntry.cpp doLedgerEntry RPC handler
+// 6. Add keylets to look up CFTokenIssuances by
+//      1.
+// 7. Add keylets to look up CFTokens by
+//      1.
 
 //////////////
 // TODO: Figure Out where these go.
@@ -181,4 +196,4 @@ pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
 // sfLockedAmount ==> "LockedAmount" | UINT64 | 16
 
 // sfMetadata => "Metadata" | BLOB | --> CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA,    257);
-// CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);*/
+// CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);

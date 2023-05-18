@@ -132,6 +132,18 @@ enum LedgerEntryType : std::uint16_t
      */
     ltCHILD = 0x1CD2,
 
+     /** A ledger object which identifies an the issuance details of a CFT.
+
+        \sa keylet::cftissuance
+     */
+     ltCFTOKEN_ISSUANCE = 0x0033,
+
+     /** A ledger object which contains a list of CFTs
+
+        \sa keylet::cftpage_min, keylet::cftpage_max, keylet::cftpage
+     */
+     ltCFTOKEN_PAGE = 0x0034,
+
 };
 // clang-format off
 

@@ -368,6 +368,7 @@ extern SF_UINT8 const sfTransactionResult;
 // 8-bit integers (uncommon)
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfAssetScale;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
@@ -437,6 +438,9 @@ extern SF_UINT64 const sfEmitBurden;
 
 // 64-bit integers (uncommon)
 extern SF_UINT64 const sfReferenceCount;
+extern SF_UINT64 const sfMaximumAmount;
+extern SF_UINT64 const sfOutstandingAmount;
+extern SF_UINT64 const sfLockedAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -446,6 +450,7 @@ extern SF_UINT160 const sfTakerPaysCurrency;
 extern SF_UINT160 const sfTakerPaysIssuer;
 extern SF_UINT160 const sfTakerGetsCurrency;
 extern SF_UINT160 const sfTakerGetsIssuer;
+extern SF_UINT160 const sfAssetCode;
 
 // 256-bit (common)
 extern SF_UINT256 const sfLedgerHash;
@@ -514,6 +519,7 @@ extern SF_VL const sfMasterSignature;
 extern SF_VL const sfUNLModifyValidator;
 extern SF_VL const sfValidatorToDisable;
 extern SF_VL const sfValidatorToReEnable;
+extern SF_VL const sfCFTMetadata;
 
 // account
 extern SF_ACCOUNT const sfAccount;
