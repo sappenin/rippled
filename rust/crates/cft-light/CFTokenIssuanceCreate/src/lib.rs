@@ -1,4 +1,4 @@
-use std::ffi::{c_char, CString};
+/*use std::ffi::{c_char, CString};
 use std::pin::Pin;
 use std::str::Utf8Error;
 use std::vec;
@@ -181,4 +181,4 @@ pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
 // sfLockedAmount ==> "LockedAmount" | UINT64 | 16
 
 // sfMetadata => "Metadata" | BLOB | --> CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA,    257);
-// CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);
+// CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);*/

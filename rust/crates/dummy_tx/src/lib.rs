@@ -6,7 +6,7 @@ use cxx::{CxxString, CxxVector, let_cxx_string, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
-use plugin_transactor::{ApplyContext, Feature, get_fields, minimum_fee, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
+use plugin_transactor::{ApplyContext, Feature, minimum_fee, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::SOElement;
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerSpecificFlags, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
@@ -45,7 +45,11 @@ impl Transactor for DummyTx2 {
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
-        let (tx, view, app, base_fee) = get_fields(ctx);
+        let tx = &ctx.tx;
+        let view = &mut ctx.view;
+        let app = &mut ctx.app;
+        let base_fee = ctx.base_fee;
+
         let account = tx.get_account_id(&SField::sf_account());
         let maybe_sle = view.peek(&Keylet::account(&account));
 

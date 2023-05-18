@@ -243,10 +243,10 @@ impl Application<'_> {
 
 pub struct ApplyContext<'a> {
     instance: &'a mut Pin<&'a mut rippled_bridge::rippled::ApplyContext>,
-    tx: STTx<'a>,
-    view: ApplyView<'a>,
-    app: Application<'a>,
-    base_fee: XrpAmount,
+    pub tx: STTx<'a>,
+    pub view: ApplyView<'a>,
+    pub app: Application<'a>,
+    pub base_fee: XrpAmount,
 }
 
 impl<'a> ApplyContext<'a> {
@@ -263,30 +263,6 @@ impl<'a> ApplyContext<'a> {
             base_fee: base_fee.into(),
         }
     }
-
-    pub fn tx(&self) -> &STTx {
-        &self.tx
-    }
-
-    pub fn view(&'a mut self) -> &mut ApplyView<'a> {
-        &mut self.view
-    }
-
-    pub fn app(&'a mut self) -> &mut Application<'a> {
-        &mut self.app
-    }
-
-    pub fn base_fee(&self) -> XrpAmount {
-        self.base_fee
-    }
-}
-
-pub fn get_fields<'a>(apply_context: &'a mut ApplyContext<'a>) -> (&'a STTx<'a>, &'a mut ApplyView<'a>, &'a mut Application<'a>, XrpAmount) {
-    let tx = &apply_context.tx;
-    let view = &mut apply_context.view;
-    let app = &mut apply_context.app;
-    let base_fee = apply_context.base_fee;
-    (tx, view, app, base_fee)
 }
 
 pub fn preflight1(ctx: &PreflightContext) -> rippled_bridge::NotTEC {
