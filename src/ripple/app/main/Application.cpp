@@ -1170,6 +1170,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/python/libdummy_tx.dylib");
     //    addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/cpp/build/libplugin_transactor.dylib");
     addPluginTransactor("/Users/nkramer/Documents/dev/rippled-scaffold/rust/target/debug/libdummy_tx.dylib");
+//    addPluginTransactor("/Users/dfuelling/Development/github/sappenin/rippled-scaffold/rust/target/debug/libdummy_tx.dylib");
 
     auto debug_log = config_->getDebugLogFile();
 
