@@ -1166,12 +1166,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 signalStop();
         });
 
-    // Add plugin transactors
-    // addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/python/libdummy_tx.dylib");
-    //    addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/cpp/build/libplugin_transactor.dylib");
-    addPluginTransactor("/Users/nkramer/Documents/dev/rippled-scaffold/rust/target/debug/libdummy_tx.dylib");
-//    addPluginTransactor("/Users/dfuelling/Development/github/sappenin/rippled-scaffold/rust/target/debug/libdummy_tx.dylib");
-
     auto debug_log = config_->getDebugLogFile();
 
     if (!debug_log.empty())
@@ -1199,6 +1193,13 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
+
+    // Register plugin features with rippled
+    for (std::string plugin: config_->PLUGINS)
+    {
+        JLOG(m_journal.info()) << "Loading plugin from " << plugin;
+        addPluginTransactor(plugin);
+    }
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
