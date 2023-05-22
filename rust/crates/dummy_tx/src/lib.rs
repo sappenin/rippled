@@ -211,19 +211,9 @@ pub fn getSFields(mut s_fields: Pin<&mut CxxVector<SFieldInfo>>) {
     let field_names = FIELD_NAMES_ONCE.get_or_init(|| {
         vec![CString::new("RegularKey2").unwrap()]
     });
-    // TODO: Might need to create a new sfield like sfQualityIn2() in SetTrust
     unsafe {
         rippled::push_sfield_info(24, 1, field_names.get(0).unwrap().as_ptr(), s_fields)
     }
-    /*s_fields.as_mut().push(SFieldInfo {
-        type_id: 24,
-        field_value: 1,
-        txt_name: CString::new("RegularKey2").unwrap().as_ptr()
-    });*/
-
-    /*s_fields.as_mut().push(SFieldInfo {
-        foo: 4
-    });*/
 }
 
 /*#[no_mangle]
