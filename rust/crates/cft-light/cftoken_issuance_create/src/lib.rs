@@ -18,6 +18,7 @@ impl Transactor for CFTokenIssuanceCreate {
     fn pre_flight(ctx: PreflightContext) -> NotTEC {
         // TODO: If we end up adding tx flags, & them with a CFTokenIssuanceCreate flag mask
         //  to make sure the flags are valid
+        // TODO: Check that transfer fee is between 0 and 50,000
         let preflight1 = preflight1(&ctx);
         if preflight1 != TEScodes::tesSUCCESS {
             return preflight1;
@@ -33,6 +34,7 @@ impl Transactor for CFTokenIssuanceCreate {
     fn pre_claim(ctx: PreclaimContext) -> TER {
         // TODO: Things to check?:
         //    Does this account already have an issuance of this currency?
+        //      Do this by
         //
         TEScodes::tesSUCCESS.into()
     }
@@ -43,6 +45,10 @@ impl Transactor for CFTokenIssuanceCreate {
 
     fn tx_format() -> Vec<SOElement> {
         vec![
+            // TODO: AssetCode is typed as an STUint160, which means you can't pass in
+            //  "USD" or other ISO codes in JSON without either (1) changing parseLeafType<STUint160>
+            //  or (2) typing AssetCode as a new SType called STCurrency and defining our own parseLeafType
+            //  function in Rust. We should eventually do the latter.
             SOElement {
                 field_code: field_code(17, 5), // AssetCode
                 style: SOEStyle::soeREQUIRED,
