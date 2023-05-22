@@ -4,7 +4,7 @@ members = [
     "crates/rippled-bridge",
     "crates/plugin-transactor",
     "crates/dummy_tx",
-    "crates/cft-light/CFTokenIssuanceCreate"
+    "crates/cft-light/cftoken_issuance_create"
 ]
 
 [workspace.dependencies]
