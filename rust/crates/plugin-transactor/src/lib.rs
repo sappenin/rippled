@@ -8,7 +8,7 @@ use std::pin::Pin;
 use cxx::SharedPtr;
 pub use transactor::Transactor;
 
-use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
+use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
 use rippled_bridge::{ApplyFlags, Keylet, LedgerSpecificFlags};
 use rippled_bridge::rippled::setFlag;
 
@@ -32,11 +32,17 @@ impl PreflightContext<'_> {
 
 pub struct PreclaimContext<'a> {
     instance: &'a rippled_bridge::rippled::PreclaimContext,
+    pub view: ReadView<'a>,
+    pub tx: STTx<'a>
 }
 
 impl PreclaimContext<'_> {
     pub fn new(instance: &rippled_bridge::rippled::PreclaimContext) -> PreclaimContext {
-        PreclaimContext { instance }
+        PreclaimContext {
+            instance,
+            view: ReadView::new(instance.getView()),
+            tx: STTx::new(instance.getTx()),
+        }
     }
 }
 
@@ -55,6 +61,10 @@ impl STTx<'_> {
 
     pub fn get_account_id(&self, field: &SField) -> AccountId {
         rippled_bridge::rippled::upcast(self.instance).getAccountID(field.instance).into()
+    }
+
+    pub fn get_uint160(&self, field: &SField) -> Hash160 {
+        self.as_st_object().getFieldH160(field.instance).into()
     }
 
     pub fn get_plugin_type(&self, field: &SField) -> STPluginType {
@@ -157,6 +167,10 @@ impl<'a> ReadView<'a> {
 
     pub(crate) fn instance(&self) -> &'a rippled_bridge::rippled::ReadView {
         self.instance
+    }
+
+    pub fn exists(&self, key: &Keylet) -> bool {
+        self.instance.exists(key)
     }
 }
 

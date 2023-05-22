@@ -85,6 +85,14 @@ public:
 
     PreclaimContext&
     operator=(PreclaimContext const&) = delete;
+
+    ReadView const& getView() const {
+        return view;
+    }
+
+    STTx const& getTx() const {
+        return tx;
+    }
 };
 
 struct PreflightResult;

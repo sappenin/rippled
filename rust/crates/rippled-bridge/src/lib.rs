@@ -6,7 +6,8 @@ use std::pin::Pin;
 use cxx::{CxxString, CxxVector, ExternType, SharedPtr, type_id, UniquePtr};
 use cxx::kind::Trivial;
 use cxx::vector::VectorElement;
-use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
+use sha2::{Sha512, Digest};
+use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, XrpAmount};
 
 pub mod ter;
 pub mod flags;
@@ -17,7 +18,6 @@ use crate::rippled::{OptionalSTVar, SerialIter, SField, STBase, STPluginType, Va
 
 #[cxx::bridge]
 pub mod rippled {
-
     extern "Rust" {
         // This function is unused, but exists only to ensure that line 11's interface is bridge
         // compatible.
@@ -69,6 +69,7 @@ pub mod rippled {
         pub type STTx;
         pub type Rules;
         pub type uint256;
+        pub type uint160 = super::UInt160;
         type Transactor;
         pub type SField;
         pub type STObject;
@@ -147,6 +148,7 @@ pub mod rippled {
         pub fn isFlag(self: &SLE, f: u32) -> bool;
 
         pub fn getAccountID(self: &STObject, field: &SField) -> AccountID;
+        pub fn getFieldH160(self: &STObject, field: &SField) -> uint160;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
 
         pub fn sfRegularKey() -> &'static SField;
@@ -157,6 +159,11 @@ pub mod rippled {
         pub fn getCode(self: &SField) -> i32;
 
         pub fn upcast(stTx: &STTx) -> &STObject;
+
+        pub fn getView(self: &PreclaimContext) -> &ReadView;
+        pub fn getTx(self: &PreclaimContext) -> &STTx;
+
+        pub fn exists(self: &ReadView, key: &Keylet) -> bool;
 
         pub fn toBase58(v: &AccountID) -> UniquePtr<CxxString>;
         pub fn view<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut ApplyView>;
@@ -184,7 +191,7 @@ pub mod rippled {
             parse_leaf_type_fn: ParseLeafTypeFnPtr,
             from_sit_constructor_ptr: STypeFromSITFnPtr,
             from_sfield_constructor_ptr: STypeFromSFieldFnPtr,
-            vec: Pin<&mut CxxVector<STypeExport>>
+            vec: Pin<&mut CxxVector<STypeExport>>,
         );
         pub unsafe fn push_sfield_info(tid: i32, fv: i32, txt_name: *const c_char, vec: Pin<&mut CxxVector<SFieldInfo>>);
 
@@ -209,7 +216,7 @@ pub struct CreateNewSFieldPtr(
     pub extern "C" fn(
         tid: i32,
         fv: i32,
-        field_name: *const c_char
+        field_name: *const c_char,
     ) -> &'static SField
 );
 
@@ -227,7 +234,7 @@ pub struct ParseLeafTypeFnPtr(
         field_name: &CxxString,
         name: &SField,
         value: &Value,
-        error: Pin<&mut Value>
+        error: Pin<&mut Value>,
     ) -> *mut OptionalSTVar
 );
 
@@ -240,7 +247,7 @@ unsafe impl ExternType for ParseLeafTypeFnPtr {
 pub struct STypeFromSITFnPtr(
     pub extern "C" fn(
         sit: Pin<&mut SerialIter>,
-        name: &SField
+        name: &SField,
     ) -> *mut STPluginType
 );
 
@@ -264,7 +271,7 @@ unsafe impl ExternType for STypeFromSFieldFnPtr {
 #[repr(C)]
 #[derive(PartialEq)]
 pub struct AccountID {
-    data_: [u8; 20]
+    data_: [u8; 20],
 }
 
 impl From<AccountID> for AccountId {
@@ -289,7 +296,7 @@ unsafe impl cxx::ExternType for AccountID {
 #[repr(C)]
 #[derive(PartialEq)]
 pub struct XRPAmount {
-    drops_: i64
+    drops_: i64,
 }
 
 impl XRPAmount {
@@ -464,7 +471,7 @@ pub struct Keylet {
     // TODO: Consider making uint256 a shared struct
     // Also test this, since key is a uint256 which has a data_ field
     key: [u8; 32],
-    r#type: LedgerEntryType
+    r#type: i16,
 }
 
 impl Keylet {
@@ -475,6 +482,30 @@ impl Keylet {
     pub fn signers(account_id: &AccountId) -> Self {
         rippled::signers(&account_id.into())
     }
+
+    pub fn new<L: Into<i16>, NS: Into<u16>, T: AsRef<[u8]>>(ledger_entry_type: L, namespace: NS, args: &[T]) -> Self {
+        let mut sha512 = Sha512::new();
+        let namespace_as_u16: u16 = namespace.into();
+        sha512.update(namespace_as_u16.to_be_bytes());
+        args.iter()
+            .for_each(|arg| sha512.update(arg.as_ref()));
+        Keylet {
+            key: sha512.finalize()[..32].try_into().unwrap(),
+            r#type: ledger_entry_type.into(),
+        }
+    }
+}
+
+#[test]
+fn test_new_keylet() {
+    let account_k_1 = Keylet::new(
+        LedgerEntryType::ltACCOUNT_ROOT,
+        LedgerNameSpace::Account,
+        vec![&ACCOUNT_ONE].as_slice()
+    );
+    let account_k_2 = Keylet::account(&ACCOUNT_ONE);
+
+    assert_eq!(account_k_1.key, account_k_2.key)
 }
 
 unsafe impl cxx::ExternType for Keylet {
@@ -482,10 +513,39 @@ unsafe impl cxx::ExternType for Keylet {
     type Kind = Trivial;
 }
 
+#[repr(u16)]
+pub enum LedgerNameSpace {
+    Account,
+    DirNode,
+    OwnerDir,
+    SkipList,
+    Amendments,
+    FeeSettings,
+    SignerList,
+    NegativeUnl,
+}
+
+impl From<LedgerNameSpace> for u16 {
+    fn from(value: LedgerNameSpace) -> Self {
+        let c = match value {
+            LedgerNameSpace::Account => 'a',
+            LedgerNameSpace::DirNode => 'd',
+            LedgerNameSpace::OwnerDir => 'O',
+            LedgerNameSpace::SkipList => 's',
+            LedgerNameSpace::Amendments => 'f',
+            LedgerNameSpace::FeeSettings => 'e',
+            LedgerNameSpace::SignerList => 'S',
+            LedgerNameSpace::NegativeUnl => 'N'
+        };
+
+        c as u16
+    }
+}
+
 #[repr(C)]
 pub struct FakeSOElement2 {
     pub field_code: i32,
-    pub style: SOEStyle
+    pub style: SOEStyle,
 }
 
 unsafe impl cxx::ExternType for FakeSOElement2 {
@@ -497,12 +557,30 @@ unsafe impl cxx::ExternType for FakeSOElement2 {
 #[derive(PartialEq, Clone, Copy)]
 pub enum SOEStyle {
     soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
+    soeREQUIRED = 0,
+    // required
+    soeOPTIONAL = 1,
+    // optional, may be present with default value
     soeDEFAULT = 2,   // optional, if present, must not have default value
 }
 
 unsafe impl cxx::ExternType for SOEStyle {
     type Id = type_id!("ripple::SOEStyle");
+    type Kind = Trivial;
+}
+
+#[repr(C)]
+pub struct UInt160 {
+    data: [u8; 20]
+}
+
+impl From<UInt160> for Hash160 {
+    fn from(value: UInt160) -> Self {
+        Hash160::try_from(value.data.as_ref()).unwrap()
+    }
+}
+
+unsafe impl cxx::ExternType for UInt160 {
+    type Id = type_id!("ripple::uint160");
     type Kind = Trivial;
 }

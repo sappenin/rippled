@@ -576,6 +576,7 @@ dependencies = [
  "cxx",
  "cxx-build",
  "serde_json",
+ "sha2 0.10.6",
  "xrpl-rust-sdk-core",
 ]
 

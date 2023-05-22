@@ -12,6 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 cxx = "1.0.94"
 xrpl-rust-sdk-core = { workspace = true }
+sha2 = "0.10.6"
 
 [build-dependencies]
 cxx-build = "1.0.94"
