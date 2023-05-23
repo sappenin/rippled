@@ -69,6 +69,10 @@ inline const ripple::STObject & upcast(const ripple::STTx &stTx) {
     return stTx;
 }
 
+inline std::shared_ptr<ripple::STObject> upcast_sle(const std::shared_ptr<ripple::SLE> &sle) {
+    return sle;
+}
+
 constexpr std::uint32_t tfUniversalMask() {
     return ripple::tfUniversalMask;
 }
@@ -79,6 +83,30 @@ constexpr ripple::SField const& sfRegularKey() {
 
 constexpr ripple::SField const& sfAccount() {
     return ripple::sfAccount;
+}
+
+constexpr ripple::SField const& sfOwnerCount() {
+    return ripple::sfOwnerCount;
+}
+
+constexpr ripple::SField const& sfOwnerNode() {
+    return ripple::sfOwnerNode;
+}
+
+constexpr ripple::SField const& sfBalance() {
+    return ripple::sfBalance;
+}
+
+constexpr ripple::SField const& sfFlags() {
+    return ripple::sfFlags;
+}
+
+constexpr ripple::SField const& sfIssuer() {
+    return ripple::sfIssuer;
+}
+
+constexpr ripple::SField const& sfTransferFee() {
+    return ripple::sfTransferFee;
 }
 
 /*constexpr ripple::SField const& sfTicketSequence() {
@@ -149,6 +177,7 @@ std::unique_ptr<ripple::STPluginType> make_stype(ripple::SField const& field, st
 std::unique_ptr<ripple::STBase> make_empty_stype(ripple::SField const& field);
 ripple::SField const& getSField(int type_id, int field_id);
 
+std::shared_ptr<ripple::SLE> new_sle(ripple::Keylet const& k);
 
 /*using TypedSTPluginType = ripple::TypedField<ripple::STPluginType>;
 ripple::SField const & makeTypedField(int tid, int fv, const char* fn);*/

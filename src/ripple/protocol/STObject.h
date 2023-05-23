@@ -227,6 +227,9 @@ public:
     getPluginType(SField const& field) const;
     Blob
     getFieldVL(SField const& field) const;
+    STBlob const&
+    getFieldBlob(SField const& field) const;
+
     STAmount const&
     getFieldAmount(SField const& field) const;
     const STVector256&

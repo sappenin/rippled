@@ -136,7 +136,7 @@ enum LedgerEntryType : std::uint16_t
 
         \sa keylet::cftissuance
      */
-     ltCFTOKEN_ISSUANCE = 0x0033,
+     ltCFTOKEN_ISSUANCE = 0x007E,
 
      /** A ledger object which contains a list of CFTs
 

@@ -20,6 +20,7 @@
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/jss.h>
 #include <utility>
+#include <iostream>
 
 namespace ripple {
 
@@ -142,6 +143,7 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
+    std::cout << "ltCFTOKEN_ISSANCE: " << ltCFTOKEN_ISSUANCE << std::endl;
     add(jss::CFTokenIssuance,
         ltCFTOKEN_ISSUANCE,
         {

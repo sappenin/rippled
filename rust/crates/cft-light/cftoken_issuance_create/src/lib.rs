@@ -2,17 +2,18 @@ use std::ffi::{c_char, CString};
 use std::pin::Pin;
 use std::str::Utf8Error;
 use std::vec;
-use cxx::{CxxString, CxxVector, let_cxx_string, UniquePtr};
+use cxx::{CxxString, CxxVector, let_cxx_string, SharedPtr, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
-use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
+use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::SOElement;
-use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEMcodes, TER, TEScodes, XRPAmount};
+use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
 
-
 struct CFTokenIssuanceCreate;
+
+const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
 impl Transactor for CFTokenIssuanceCreate {
     fn pre_flight(ctx: PreflightContext) -> NotTEC {
@@ -32,18 +33,76 @@ impl Transactor for CFTokenIssuanceCreate {
     }
 
     fn pre_claim(ctx: PreclaimContext) -> TER {
-        // TODO: Anything else to check?
-        let keylet = Keylet::builder(0x007Ei16, 0x007Eu16)
+        // TODO: Anything else to check? I don't think we need to check if the directory is full
+        //  because when we go to insert the issuance, dirInsert() will return null if the
+        //  directory is full
+        let keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
             .key(ctx.tx.get_account_id(&SField::sf_account()))
             .key(ctx.tx.get_uint160(&SField::get_plugin_field(17, 5)))
             .build();
-        if !ctx.view.exists(&keylet) {
+        if ctx.view.exists(&keylet) {
             return TECcodes::tecDUPLICATE.into();
         }
         TEScodes::tesSUCCESS.into()
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
+        // Maybe check all the things that were checked in pre_claim? Not sure
+        // Load AccountRoot via account keylet using Account field from ctx.tx
+        //      If it doesn't exist, return error code
+        // Make sure the source account has enough XRP to fund the reserve required by new issuance
+        //      Load reserve by calling ctx.view().fees().account_reserve(account_root.owner_count + 1)
+        //      and checking if that is > the account's balance.
+        // Create the CFTokenIssuance
+        // Save the CFTokenIssuance to the ctx.view by calling ctx.view().insert(issuance)
+        // Add CFTokenIssuance keylet to owner directory by calling dirInsert
+        // Set the sfOwnerNode field of the CFTokenIssuance to the page number returned by dirInsert
+        // Update the owner count of the account root sle by calling adjustOwnerCount and then ctx.view().update(account_root_Sle)
+        // return tesSUCCESS
+
+        let source_account_id = &ctx.tx.get_account_id(&SField::sf_account());
+        let account_root = ctx.view.peek(&Keylet::account(source_account_id));
+        if account_root.is_none() {
+            return TEFcodes::tefINTERNAL.into();
+        }
+
+        let account_root = account_root.unwrap();
+
+        // Make sure source account has enough funds available to cover the reserve.
+        let owner_count = account_root.get_uint32(&SField::sf_owner_count());
+        let reserve = ctx.view.fees().account_reserve(owner_count as usize + 1);
+        let balance = account_root.get_amount(&SField::sf_balance()).xrp();
+        if balance < reserve {
+            return TECcodes::tecINSUFFICIENT_RESERVE.into();
+        }
+
+        let asset_code = SField::get_plugin_field(17, 5);
+        let issuance_keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
+            .key(source_account_id)
+            .key(ctx.tx.get_uint160(&asset_code))
+            .build();
+
+        let mut slep = SLE::from(&issuance_keylet);
+        slep.set_field_u32(&SField::sf_flags(), ctx.tx.flags());
+        slep.set_field_account(&SField::sf_issuer(), &source_account_id);
+        slep.set_field_u160(&asset_code, &ctx.tx.get_uint160(&asset_code));
+        slep.set_field_u8(&SField::get_plugin_field(16, 19), ctx.tx.get_u8(&SField::get_plugin_field(16, 19)));
+        slep.set_field_u64(&SField::get_plugin_field(3, 20), ctx.tx.get_u64(&SField::get_plugin_field(3, 20)));
+        slep.set_field_u64(&SField::get_plugin_field(3, 21), 0);
+        slep.set_field_u64(&SField::get_plugin_field(3, 22), 0);
+        slep.set_field_u16(&SField::sf_transfer_fee(), ctx.tx.get_u16(&SField::sf_transfer_fee()));
+        if ctx.tx.is_field_present(&SField::get_plugin_field(7, 22)) {
+            slep.set_field_blob(&SField::get_plugin_field(7, 22), &ctx.tx.get_blob(&SField::get_plugin_field(7, 22)));
+        }
+
+        ctx.view.insert(&slep);
+
+        let page  = ctx.view.dir_insert(&Keylet::owner_dir(&source_account_id), &issuance_keylet, &source_account_id);
+        if page.is_none() {
+            return TECcodes::tecDIR_FULL.into();
+        }
+
+        slep.set_field_u64(&SField::sf_owner_node(), page.unwrap());
         todo!()
     }
 

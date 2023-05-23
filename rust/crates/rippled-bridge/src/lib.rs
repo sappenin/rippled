@@ -88,6 +88,9 @@ pub mod rippled {
         pub type Value;
         pub type Buffer;
         pub type STPluginType;
+        pub type STAmount;
+        pub type STBlob;
+
 
         ////////////////////////////////
         // Functions implemented in C++.
@@ -108,6 +111,9 @@ pub mod rippled {
 
         #[namespace = "ripple::keylet"]
         pub fn signers(id: &AccountID) -> Keylet;
+
+        #[namespace = "ripple::keylet"]
+        pub fn ownerDir(id: &AccountID) -> Keylet;
     }
 
     unsafe extern "C++" {
@@ -149,16 +155,33 @@ pub mod rippled {
 
         pub fn getAccountID(self: &STObject, field: &SField) -> AccountID;
         pub fn getFieldH160(self: &STObject, field: &SField) -> uint160;
+        pub fn getFieldU32(self: &STObject, field: &SField) -> u32;
+        pub fn getFieldU8(self: &STObject, field: &SField) -> u8;
+        pub fn getFieldU16(self: &STObject, field: &SField) -> u16;
+        pub fn getFieldU64(self: &STObject, field: &SField) -> u64;
+        pub fn getFieldBlob(self: &STObject, field: &SField) -> &'static STBlob;
+
+        pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
+
+        pub fn xrp(self: &STAmount) -> XRPAmount;
 
         pub fn sfRegularKey() -> &'static SField;
         pub fn sfAccount() -> &'static SField;
+        pub fn sfOwnerCount() -> &'static SField;
+        pub fn sfOwnerNode() -> &'static SField;
+        pub fn sfBalance() -> &'static SField;
+        pub fn sfFlags() -> &'static SField;
+        pub fn sfIssuer() -> &'static SField;
+        pub fn sfTransferFee() -> &'static SField;
+
         // pub fn sfTicketSequence() -> &'static SField;
         pub fn getSField(type_id: i32, field_id: i32) -> &'static SField;
 
         pub fn getCode(self: &SField) -> i32;
 
         pub fn upcast(stTx: &STTx) -> &STObject;
+        pub fn upcast_sle(sle: &SharedPtr<SLE>) -> SharedPtr<STObject>;
 
         pub fn getView(self: &PreclaimContext) -> &ReadView;
         pub fn getTx(self: &PreclaimContext) -> &STTx;
@@ -172,8 +195,12 @@ pub mod rippled {
         pub fn getApp<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut Application>;
 
         pub fn peek(self: Pin<&mut ApplyView>, k: &Keylet) -> SharedPtr<SLE>;
+        pub fn insert(self: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>);
+        pub fn update(self: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>);
         pub fn fees<'a, 'b>(self: &'a ApplyView) -> &'b Fees;
         pub fn flags(self: &ApplyView) -> ApplyFlags;
+
+        pub fn accountReserve(self: &Fees, owner_count: usize) -> XRPAmount;
 
         // pub fn setFlag(self: Pin<&mut SLE>, f: u32) -> bool;
 
@@ -184,6 +211,17 @@ pub mod rippled {
         pub fn makeFieldAbsent(sle: &SharedPtr<SLE>, field: &SField);
         pub fn minimumFee(app: Pin<&mut Application>, baseFee: XRPAmount, fees: &Fees, flags: ApplyFlags) -> XRPAmount;
 
+        // Set
+        //  flags (uint32),
+        //  issuer (account),
+        //  assetCode (uint160),
+        //  assetScale (uint8),
+        //  maximumAmount(uint64),
+        //  outsandingAmount(uint64),
+        //  lockedAmount(uin64)
+        //  transferFee(uint16)
+        //  metadata (blob),
+        //  ownerNode (uint64)
         pub fn push_soelement(field_code: i32, style: SOEStyle, vec: Pin<&mut CxxVector<FakeSOElement>>);
         pub unsafe fn push_stype_export(
             tid: i32,
@@ -208,6 +246,8 @@ pub mod rippled {
 
         pub unsafe fn data(self: &STPluginType) -> *const u8;
         pub fn size(self: &STPluginType) -> usize;
+
+        pub fn new_sle(keylet: &Keylet) -> SharedPtr<SLE>;
     }
 }
 
@@ -512,6 +552,9 @@ impl Keylet {
         rippled::signers(&account_id.into())
     }
 
+    pub fn owner_dir(account_id: &AccountId) -> Self {
+        rippled::ownerDir(&account_id.into())
+    }
     pub fn builder<L: Into<i16>, NS: Into<u16>>(ledger_entry_type: L, namespace: NS) -> KeyletBuilder {
         KeyletBuilder::new(ledger_entry_type, namespace)
     }

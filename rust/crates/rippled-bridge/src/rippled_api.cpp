@@ -131,8 +131,6 @@ ripple::SField const& getSField(int type_id, int field_id) {
     return ripple::SField::getField(ripple::field_code(type_id, field_id));
 }
 
-/*ripple::SField const & makeTypedField(int tid, int fv, const char* fn) {
-    if (ripple::SField const& field = ripple::SField::getField(ripple::field_code(tid, fv)); field != ripple::sfInvalid)
-        return field;
-    return *(new ripple::TypedField<ripple::STPluginType>(tid, fv, fn));
-}*/
+std::shared_ptr<ripple::SLE> new_sle(ripple::Keylet const& k) {
+    return std::make_shared<ripple::SLE>(k);
+}

@@ -5,10 +5,10 @@ pub mod transactor;
 use core::slice;
 use std::ops::Deref;
 use std::pin::Pin;
-use cxx::SharedPtr;
+use cxx::{CxxVector, SharedPtr};
 pub use transactor::Transactor;
 
-use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
+use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
 use rippled_bridge::{ApplyFlags, Keylet, LedgerSpecificFlags};
 use rippled_bridge::rippled::setFlag;
 
@@ -33,7 +33,7 @@ impl PreflightContext<'_> {
 pub struct PreclaimContext<'a> {
     instance: &'a rippled_bridge::rippled::PreclaimContext,
     pub view: ReadView<'a>,
-    pub tx: STTx<'a>
+    pub tx: STTx<'a>,
 }
 
 impl PreclaimContext<'_> {
@@ -60,11 +60,31 @@ impl STTx<'_> {
     }
 
     pub fn get_account_id(&self, field: &SField) -> AccountId {
-        rippled_bridge::rippled::upcast(self.instance).getAccountID(field.instance).into()
+        self.as_st_object().getAccountID(field.instance).into()
     }
 
     pub fn get_uint160(&self, field: &SField) -> Hash160 {
         self.as_st_object().getFieldH160(field.instance).into()
+    }
+
+    pub fn get_u8(&self, field: &SField) -> u8 {
+        self.as_st_object().getFieldU8(field.instance)
+    }
+
+    pub fn get_u16(&self, field: &SField) -> u16 {
+        self.as_st_object().getFieldU16(field.instance)
+    }
+
+    pub fn get_u32(&self, field: &SField) -> u32 {
+        self.as_st_object().getFieldU32(field.instance)
+    }
+
+    pub fn get_u64(&self, field: &SField) -> u64 {
+        self.as_st_object().getFieldU64(field.instance)
+    }
+
+    pub fn get_blob(&self, field: &SField) -> STBlob {
+        STBlob::new(self.as_st_object().getFieldBlob(field.instance))
     }
 
     pub fn get_plugin_type(&self, field: &SField) -> STPluginType {
@@ -123,11 +143,49 @@ impl SField<'_> {
         }
     }
 
+    pub fn sf_owner_count() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfOwnerCount()
+        }
+    }
+
+    pub fn sf_owner_node() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfOwnerNode()
+        }
+    }
+
+    pub fn sf_balance() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfBalance()
+        }
+    }
+
+    pub fn sf_flags() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfFlags()
+        }
+    }
+
+    pub fn sf_issuer() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfIssuer()
+        }
+    }
+
+    pub fn sf_transfer_fee() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfTransferFee()
+        }
+    }
+
     pub fn get_plugin_field(type_id: i32, field_id: i32) -> Self {
         SField {
             instance: rippled_bridge::rippled::getSField(type_id, field_id)
         }
     }
+
+
 }
 
 pub struct Rules<'a> {
@@ -182,6 +240,36 @@ impl Fees<'_> {
     pub fn new(instance: &rippled_bridge::rippled::Fees) -> Fees {
         Fees { instance }
     }
+
+    pub fn account_reserve(&self, owner_count: usize) -> XrpAmount {
+        self.instance.accountReserve(owner_count).into()
+    }
+}
+
+pub struct STAmount<'a> {
+    instance: &'a rippled_bridge::rippled::STAmount,
+}
+
+impl STAmount<'_> {
+    pub(crate) fn new(instance: &rippled_bridge::rippled::STAmount) -> STAmount {
+        STAmount {
+            instance
+        }
+    }
+
+    pub fn xrp(&self) -> XrpAmount {
+        self.instance.xrp().into()
+    }
+}
+
+pub struct STBlob<'a> {
+    instance: &'a rippled_bridge::rippled::STBlob,
+}
+
+impl STBlob<'_> {
+    pub fn new(instance: &rippled_bridge::rippled::STBlob) -> STBlob {
+        STBlob { instance }
+    }
 }
 
 pub struct SLE {
@@ -193,20 +281,58 @@ impl SLE {
         SLE { instance }
     }
 
-    pub fn set_plugin_type(&self, field: &SField, value: &STPluginType) {
-        rippled_bridge::rippled::setPluginType(&self.instance, field.instance, value.instance);
+    pub fn get_account_id(&self, field: &SField) -> AccountId {
+        self.as_st_object().deref().getAccountID(field.instance).into()
+    }
+
+    pub fn get_uint32(&self, field: &SField) -> u32 {
+        self.as_st_object().deref().getFieldU32(field.instance)
+    }
+
+    pub fn get_amount(&self, field: &SField) -> STAmount {
+        STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
     }
 
     pub fn make_field_absent(&self, field: &SField) {
         rippled_bridge::rippled::makeFieldAbsent(&self.instance, field.instance);
     }
 
+    pub fn is_flag(&self, flag: LedgerSpecificFlags) -> bool {
+        self.instance.deref().isFlag(flag.into())
+    }
+
     pub fn set_flag(&self, flag: LedgerSpecificFlags) {
         setFlag(&self.instance, flag.into());
     }
 
-    pub fn is_flag(&self, flag: LedgerSpecificFlags) -> bool {
-        self.instance.deref().isFlag(flag.into())
+    pub fn set_field_u8(&mut self, sfield: &SField, value: u8) {}
+
+    pub fn set_field_u16(&mut self, sfield: &SField, value: u16) {}
+
+    pub fn set_field_u32(&mut self, sfield: &SField, value: u32) {}
+
+    pub fn set_field_u64(&mut self, sfield: &SField, value: u64) {}
+
+    pub fn set_field_u160(&mut self, sfield: &SField, value: &Hash160) {}
+
+    pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {}
+
+    pub fn set_field_blob(&mut self, sfield: &SField, value: &STBlob) {}
+
+    pub fn set_plugin_type(&self, field: &SField, value: &STPluginType) {
+        rippled_bridge::rippled::setPluginType(&self.instance, field.instance, value.instance);
+    }
+
+    fn as_st_object(&self) -> SharedPtr<rippled_bridge::rippled::STObject> {
+        rippled_bridge::rippled::upcast_sle(&self.instance)
+    }
+}
+
+impl From<&Keylet> for SLE {
+    fn from(value: &Keylet) -> Self {
+        SLE::new(
+            rippled_bridge::rippled::new_sle(value)
+        )
     }
 }
 
@@ -234,6 +360,18 @@ impl ApplyView<'_> {
         } else {
             Some(SLE::new(maybe_sle))
         }
+    }
+
+    pub fn insert(&mut self, sle: &SLE) {
+        self.instance.as_mut().insert(&sle.instance);
+    }
+
+    pub fn update(&mut self, sle: &SLE) {
+        self.instance.as_mut().update(&sle.instance);
+    }
+
+    pub fn dir_insert(&mut self, directory: &Keylet, key: &Keylet, describe: &AccountId) -> Option<u64> {
+        todo!()
     }
 
     pub fn fees(&self) -> &Fees {

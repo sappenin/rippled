@@ -127,7 +127,8 @@ ApplyViewBase::flags() const
 std::shared_ptr<SLE>
 ApplyViewBase::peek(Keylet const& k)
 {
-    return items_.peek(*base_, k);
+    const std::shared_ptr<SLE>& ptr = items_.peek(*base_, k);
+    return ptr;
 }
 
 void

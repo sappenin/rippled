@@ -607,6 +607,13 @@ STObject::getFieldVL(SField const& field) const
     return Blob(b.data(), b.data() + b.size());
 }
 
+STBlob const&
+STObject::getFieldBlob(SField const& field) const
+{
+    STBlob empty;
+    return getFieldByConstRef<STBlob>(field, empty);
+}
+
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
