@@ -8,7 +8,7 @@ use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, XrpAmount};
 use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::SOElement;
-use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TEMcodes, TER, TEScodes, XRPAmount};
+use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
 
 
@@ -32,21 +32,13 @@ impl Transactor for CFTokenIssuanceCreate {
     }
 
     fn pre_claim(ctx: PreclaimContext) -> TER {
-        // TODO: Things to check?:
-        //    Does this account already have an issuance of this currency?
-        //      Do this by
-        //
-        // TODO: Figure out how to pass in a T: AsRef<[u8]>. This doesn't work because you can't have
-        //   vecs of different concrete types
-        let vec1 = vec![ctx.tx.get_account_id(&SField::sf_account()), ctx.tx.get_uint160(&SField::get_plugin_field(17, 5))];
-        let keylet = Keylet::new(
-            0x007E,
-            0x007E, // This is a ~ in ascii
-            vec1.as_slice()
-        );
+        // TODO: Anything else to check?
+        let keylet = Keylet::builder(0x007Ei16, 0x007Eu16)
+            .key(ctx.tx.get_account_id(&SField::sf_account()))
+            .key(ctx.tx.get_uint160(&SField::get_plugin_field(17, 5)))
+            .build();
         if !ctx.view.exists(&keylet) {
-            // TODO: Return a different error
-            return TEMcodes::temINVALID_FLAG.into();
+            return TECcodes::tecDUPLICATE.into();
         }
         TEScodes::tesSUCCESS.into()
     }

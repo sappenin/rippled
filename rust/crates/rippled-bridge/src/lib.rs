@@ -461,15 +461,44 @@ pub enum LedgerEntryType {
     ltGENERATOR_MAP = 0x0067,
 }
 
+impl From<LedgerEntryType> for i16 {
+    fn from(value: LedgerEntryType) -> Self {
+        value as i16
+    }
+}
+
 unsafe impl cxx::ExternType for LedgerEntryType {
     type Id = type_id!("ripple::LedgerEntryType");
     type Kind = Trivial;
 }
 
+pub struct KeyletBuilder {
+    ledger_entry_type: i16,
+    namespace: u16,
+    key_bytes: Vec<u8>
+}
+
+impl KeyletBuilder {
+    pub fn new<L: Into<i16>, NS: Into<u16>>(ledger_entry_type: L, namespace: NS) -> Self {
+        KeyletBuilder {
+            ledger_entry_type: ledger_entry_type.into(),
+            namespace: namespace.into(),
+            key_bytes: Vec::new()
+        }
+    }
+
+    pub fn key<T: AsRef<[u8]>>(mut self, key: T) -> Self {
+        self.key_bytes.extend_from_slice(key.as_ref());
+        self
+    }
+
+    pub fn build(self) -> Keylet {
+        Keylet::new(self.ledger_entry_type, self.namespace, self.key_bytes)
+    }
+}
+
 #[repr(C)]
 pub struct Keylet {
-    // TODO: Consider making uint256 a shared struct
-    // Also test this, since key is a uint256 which has a data_ field
     key: [u8; 32],
     r#type: i16,
 }
@@ -483,26 +512,26 @@ impl Keylet {
         rippled::signers(&account_id.into())
     }
 
-    pub fn new<L: Into<i16>, NS: Into<u16>, T: AsRef<[u8]>>(ledger_entry_type: L, namespace: NS, args: &[T]) -> Self {
+    pub fn builder<L: Into<i16>, NS: Into<u16>>(ledger_entry_type: L, namespace: NS) -> KeyletBuilder {
+        KeyletBuilder::new(ledger_entry_type, namespace)
+    }
+
+    fn new(ledger_entry_type: i16, namespace: u16, bytes: Vec<u8>) -> Self {
         let mut sha512 = Sha512::new();
-        let namespace_as_u16: u16 = namespace.into();
-        sha512.update(namespace_as_u16.to_be_bytes());
-        args.iter()
-            .for_each(|arg| sha512.update(arg.as_ref()));
+        sha512.update(namespace.to_be_bytes());
+        sha512.update(&bytes);
         Keylet {
             key: sha512.finalize()[..32].try_into().unwrap(),
-            r#type: ledger_entry_type.into(),
+            r#type: ledger_entry_type,
         }
     }
 }
 
 #[test]
 fn test_new_keylet() {
-    let account_k_1 = Keylet::new(
-        LedgerEntryType::ltACCOUNT_ROOT,
-        LedgerNameSpace::Account,
-        vec![&ACCOUNT_ONE].as_slice()
-    );
+    let account_k_1 = Keylet::builder(LedgerEntryType::ltACCOUNT_ROOT, LedgerNameSpace::Account)
+        .key(ACCOUNT_ONE)
+        .build();
     let account_k_2 = Keylet::account(&ACCOUNT_ONE);
 
     assert_eq!(account_k_1.key, account_k_2.key)
