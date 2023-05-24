@@ -520,6 +520,7 @@ extern SF_VL const sfUNLModifyValidator;
 extern SF_VL const sfValidatorToDisable;
 extern SF_VL const sfValidatorToReEnable;
 extern SF_VL const sfCFTMetadata;
+extern SF_VL const sfPluginData;
 
 // account
 extern SF_ACCOUNT const sfAccount;
