@@ -62,6 +62,10 @@ public:
         return baseFee;
     }
 
+    constexpr beast::Journal const& getJournal() const {
+        return journal;
+    }
+
     ApplyView&
     view()
     {

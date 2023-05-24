@@ -90,6 +90,8 @@ pub mod rippled {
         pub type STPluginType;
         pub type STAmount;
         pub type STBlob;
+        #[namespace = "beast"]
+        pub type Journal;
 
 
         ////////////////////////////////
@@ -125,6 +127,7 @@ pub mod rippled {
         pub type STypeFromSITFnPtr = super::STypeFromSITFnPtr;
         pub type STypeFromSFieldFnPtr = super::STypeFromSFieldFnPtr;
         pub type OptionalSTVar;
+        pub type OptionalUInt64;
 
         pub fn base64_decode_ptr(s: &CxxString) -> UniquePtr<CxxString>;
 
@@ -160,9 +163,21 @@ pub mod rippled {
         pub fn getFieldU16(self: &STObject, field: &SField) -> u16;
         pub fn getFieldU64(self: &STObject, field: &SField) -> u64;
         pub fn getFieldBlob(self: &STObject, field: &SField) -> &'static STBlob;
-
         pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
+
+        pub fn setFlag(sle: &SharedPtr<SLE>, f: u32) -> bool;
+        pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
+        pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
+        pub fn setFieldU8(sle: &SharedPtr<SLE>, field: &SField, v: u8);
+        pub fn setFieldU16(sle: &SharedPtr<SLE>, field: &SField, v: u16);
+        pub fn setFieldU32(sle: &SharedPtr<SLE>, field: &SField, v: u32);
+        pub fn setFieldU64(sle: &SharedPtr<SLE>, field: &SField, v: u64);
+        pub fn setFieldH160(sle: &SharedPtr<SLE>, field: &SField, v: &uint160);
+        pub fn setFieldBlob(sle: &SharedPtr<SLE>, field: &SField, v: &STBlob);
+
+
+        pub fn makeFieldAbsent(sle: &SharedPtr<SLE>, field: &SField);
 
         pub fn xrp(self: &STAmount) -> XRPAmount;
 
@@ -193,10 +208,16 @@ pub mod rippled {
         pub fn getBaseFee<'a>(self: Pin<&'a mut ApplyContext>) -> XRPAmount;
         pub fn getTx<'a, 'b>(self: &'a ApplyContext) -> &'b STTx;
         pub fn getApp<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut Application>;
+        pub fn getJournal<'a, 'b>(self: &'a ApplyContext) -> &'b Journal;
 
         pub fn peek(self: Pin<&mut ApplyView>, k: &Keylet) -> SharedPtr<SLE>;
         pub fn insert(self: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>);
         pub fn update(self: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>);
+        pub fn dir_insert(apply_view: Pin<&mut ApplyView>, directory: &Keylet, key: &Keylet, account_id: &AccountID) -> UniquePtr<OptionalUInt64>;
+        pub fn has_value(optional: &UniquePtr<OptionalUInt64>) -> bool;
+        pub fn get_value(optional: &UniquePtr<OptionalUInt64>) -> u64;
+        pub fn adjustOwnerCount(view: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>, amount: i32, j: &Journal);
+
         pub fn fees<'a, 'b>(self: &'a ApplyView) -> &'b Fees;
         pub fn flags(self: &ApplyView) -> ApplyFlags;
 
@@ -204,11 +225,6 @@ pub mod rippled {
 
         // pub fn setFlag(self: Pin<&mut SLE>, f: u32) -> bool;
 
-        pub fn setFlag(sle: &SharedPtr<SLE>, f: u32) -> bool;
-        pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
-        pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
-
-        pub fn makeFieldAbsent(sle: &SharedPtr<SLE>, field: &SField);
         pub fn minimumFee(app: Pin<&mut Application>, baseFee: XRPAmount, fees: &Fees, flags: ApplyFlags) -> XRPAmount;
 
         // Set
@@ -322,6 +338,14 @@ impl From<AccountID> for AccountId {
 
 impl From<&AccountId> for AccountID {
     fn from(value: &AccountId) -> Self {
+        AccountID {
+            data_: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+impl From<AccountId> for AccountID {
+    fn from(value: AccountId) -> Self {
         AccountID {
             data_: value.as_ref().try_into().unwrap()
         }
@@ -540,7 +564,7 @@ impl KeyletBuilder {
 #[repr(C)]
 pub struct Keylet {
     key: [u8; 32],
-    r#type: i16,
+    pub r#type: i16,
 }
 
 impl Keylet {
@@ -649,6 +673,22 @@ pub struct UInt160 {
 impl From<UInt160> for Hash160 {
     fn from(value: UInt160) -> Self {
         Hash160::try_from(value.data.as_ref()).unwrap()
+    }
+}
+
+impl From<Hash160> for UInt160 {
+    fn from(value: Hash160) -> Self {
+        UInt160 {
+            data: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+impl From<&Hash160> for UInt160 {
+    fn from(value: &Hash160) -> Self {
+        UInt160 {
+            data: value.as_ref().try_into().unwrap()
+        }
     }
 }
 

@@ -7,6 +7,7 @@
 #include "rippled-bridge/src/lib.rs.h"
 #include <functional>
 #include <string>
+#include <iostream>
 
 std::unique_ptr <std::string>
 base64_decode_ptr(std::string const &data) {
@@ -65,6 +66,55 @@ void setPluginType(
 ) {
     sle->setPluginType(field, v);
 }
+
+void setFieldU8(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint8_t v
+) {
+    sle->setFieldU8(field, v);
+}
+
+void setFieldU16(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint16_t v
+) {
+    sle->setFieldU16(field, v);
+}
+
+void setFieldU32(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint32_t v
+) {
+    sle->setFieldU32(field, v);
+}
+
+void setFieldU64(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint64_t v
+) {
+    sle->setFieldU64(field, v);
+}
+
+void setFieldH160(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::uint160 const& v
+) {
+    sle->setFieldH160(field, v);
+}
+
+void setFieldBlob(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::STBlob const& v
+) {
+    sle->setFieldBlob(field, v);
+}
+
 
 void makeFieldAbsent(
         std::shared_ptr<ripple::SLE>const & sle,
@@ -133,4 +183,32 @@ ripple::SField const& getSField(int type_id, int field_id) {
 
 std::shared_ptr<ripple::SLE> new_sle(ripple::Keylet const& k) {
     return std::make_shared<ripple::SLE>(k);
+}
+
+std::unique_ptr<std::optional<std::uint64_t>>
+dir_insert(ripple::ApplyView& view, ripple::Keylet const& directory, ripple::Keylet const& key, ripple::AccountID const& account) {
+    std::optional<std::uint64_t> result =
+        view.dirInsert(directory, key, ripple::describeOwnerDir(account));
+    std::cout << "Result: " << result.value() << std::endl;
+    return std::make_unique<std::optional<std::uint64_t>>(result);
+}
+
+bool has_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional) {
+    return optional->has_value();
+}
+
+std::uint64_t get_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional) {
+    return optional->value();
+}
+
+void
+adjustOwnerCount(
+    ripple::ApplyView& view,
+    std::shared_ptr<ripple::SLE> const& sle,
+    std::int32_t amount,
+    beast::Journal const& j)
+{
+//    beast::Journal actual = *j;
+//    beast::Journal *journal = &j;
+    ripple::adjustOwnerCount(view, sle, amount, j);
 }

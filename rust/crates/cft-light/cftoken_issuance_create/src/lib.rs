@@ -10,6 +10,7 @@ use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, pref
 use plugin_transactor::transactor::SOElement;
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
+use rippled_bridge::TEScodes::tesSUCCESS;
 
 struct CFTokenIssuanceCreate;
 
@@ -47,19 +48,6 @@ impl Transactor for CFTokenIssuanceCreate {
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
-        // Maybe check all the things that were checked in pre_claim? Not sure
-        // Load AccountRoot via account keylet using Account field from ctx.tx
-        //      If it doesn't exist, return error code
-        // Make sure the source account has enough XRP to fund the reserve required by new issuance
-        //      Load reserve by calling ctx.view().fees().account_reserve(account_root.owner_count + 1)
-        //      and checking if that is > the account's balance.
-        // Create the CFTokenIssuance
-        // Save the CFTokenIssuance to the ctx.view by calling ctx.view().insert(issuance)
-        // Add CFTokenIssuance keylet to owner directory by calling dirInsert
-        // Set the sfOwnerNode field of the CFTokenIssuance to the page number returned by dirInsert
-        // Update the owner count of the account root sle by calling adjustOwnerCount and then ctx.view().update(account_root_Sle)
-        // return tesSUCCESS
-
         let source_account_id = &ctx.tx.get_account_id(&SField::sf_account());
         let account_root = ctx.view.peek(&Keylet::account(source_account_id));
         if account_root.is_none() {
@@ -83,14 +71,20 @@ impl Transactor for CFTokenIssuanceCreate {
             .build();
 
         let mut slep = SLE::from(&issuance_keylet);
-        slep.set_field_u32(&SField::sf_flags(), ctx.tx.flags());
-        slep.set_field_account(&SField::sf_issuer(), &source_account_id);
-        slep.set_field_u160(&asset_code, &ctx.tx.get_uint160(&asset_code));
-        slep.set_field_u8(&SField::get_plugin_field(16, 19), ctx.tx.get_u8(&SField::get_plugin_field(16, 19)));
-        slep.set_field_u64(&SField::get_plugin_field(3, 20), ctx.tx.get_u64(&SField::get_plugin_field(3, 20)));
-        slep.set_field_u64(&SField::get_plugin_field(3, 21), 0);
-        slep.set_field_u64(&SField::get_plugin_field(3, 22), 0);
-        slep.set_field_u16(&SField::sf_transfer_fee(), ctx.tx.get_u16(&SField::sf_transfer_fee()));
+        slep.set_field_u32(&SField::sf_flags(), ctx.tx.flags()); // sfFlags
+        slep.set_field_account(&SField::sf_issuer(), &source_account_id); // sfIssuer
+        slep.set_field_h160(&asset_code, &ctx.tx.get_uint160(&asset_code)); // sfAssetCode
+        slep.set_field_u8(&SField::get_plugin_field(16, 19), ctx.tx.get_u8(&SField::get_plugin_field(16, 19))); // sfAssetScale
+        slep.set_field_u64(&SField::get_plugin_field(3, 20), ctx.tx.get_u64(&SField::get_plugin_field(3, 20))); // sfMaximumAmount
+        // Only set sfTransferFee if specified in the transaction and != 0. Otherwise,
+        // the transaction will succeed but loading the ledger entry will fail because
+        // you can't set an soeDEFAULT field to the default value (0)
+        let transfer_fee = ctx.tx.get_u16(&SField::sf_transfer_fee());
+        if transfer_fee != 0 {
+            slep.set_field_u16(&SField::sf_transfer_fee(), transfer_fee);
+        }
+
+        // Only set sfCFTMetadata if it's specified in the transaction.
         if ctx.tx.is_field_present(&SField::get_plugin_field(7, 22)) {
             slep.set_field_blob(&SField::get_plugin_field(7, 22), &ctx.tx.get_blob(&SField::get_plugin_field(7, 22)));
         }
@@ -103,7 +97,12 @@ impl Transactor for CFTokenIssuanceCreate {
         }
 
         slep.set_field_u64(&SField::sf_owner_node(), page.unwrap());
-        todo!()
+
+        // Adjust owner count
+        ctx.view.adjust_owner_count(&account_root, 1, &ctx.journal);
+        ctx.view.update(&account_root);
+
+        return tesSUCCESS.into();
     }
 
     fn tx_format() -> Vec<SOElement> {

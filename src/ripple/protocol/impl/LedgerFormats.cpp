@@ -20,7 +20,6 @@
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/jss.h>
 #include <utility>
-#include <iostream>
 
 namespace ripple {
 
@@ -69,24 +68,6 @@ LedgerFormats::LedgerFormats()
             {sfIndexPrevious,        soeOPTIONAL},
         },
         commonFields);
-
-//    add(jss::Escrow,
-//        ltESCROW,
-//        {
-//            {sfAccount,              soeREQUIRED},
-//            {sfDestination,          soeREQUIRED},
-//            {sfAmount,               soeREQUIRED},
-//            {sfCondition,            soeOPTIONAL},
-//            {sfCancelAfter,          soeOPTIONAL},
-//            {sfFinishAfter,          soeOPTIONAL},
-//            {sfSourceTag,            soeOPTIONAL},
-//            {sfDestinationTag,       soeOPTIONAL},
-//            {sfOwnerNode,            soeREQUIRED},
-//            {sfPreviousTxnID,        soeREQUIRED},
-//            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-//            {sfDestinationNode,      soeOPTIONAL},
-//        },
-//        commonFields);
 
     add(jss::LedgerHashes,
         ltLEDGER_HASHES,
@@ -143,7 +124,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    std::cout << "ltCFTOKEN_ISSANCE: " << ltCFTOKEN_ISSUANCE << std::endl;
     add(jss::CFTokenIssuance,
         ltCFTOKEN_ISSUANCE,
         {
@@ -152,10 +132,17 @@ LedgerFormats::LedgerFormats()
             {sfAssetCode, soeREQUIRED},
             {sfAssetScale, soeDEFAULT},
             {sfMaximumAmount, soeREQUIRED},
-            {sfOutstandingAmount, soeREQUIRED},
+            {sfOutstandingAmount, soeDEFAULT},
             {sfLockedAmount, soeDEFAULT},
             {sfTransferFee, soeDEFAULT},
             {sfCFTMetadata, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::RustPTData,
+            ltPLUGIN_TRANSACTOR_DATA,
+            {
+                {sfPluginData, soeREQUIRED},
         },
         commonFields);
 

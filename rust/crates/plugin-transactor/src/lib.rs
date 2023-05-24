@@ -5,12 +5,12 @@ pub mod transactor;
 use core::slice;
 use std::ops::Deref;
 use std::pin::Pin;
-use cxx::{CxxVector, SharedPtr};
+use cxx::{CxxVector, SharedPtr, UniquePtr};
 pub use transactor::Transactor;
 
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
-use rippled_bridge::{ApplyFlags, Keylet, LedgerSpecificFlags};
-use rippled_bridge::rippled::setFlag;
+use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, UInt160};
+use rippled_bridge::rippled::{OptionalUInt64, setFlag};
 
 pub struct PreflightContext<'a> {
     instance: &'a rippled_bridge::rippled::PreflightContext,
@@ -184,8 +184,6 @@ impl SField<'_> {
             instance: rippled_bridge::rippled::getSField(type_id, field_id)
         }
     }
-
-
 }
 
 pub struct Rules<'a> {
@@ -305,19 +303,33 @@ impl SLE {
         setFlag(&self.instance, flag.into());
     }
 
-    pub fn set_field_u8(&mut self, sfield: &SField, value: u8) {}
+    pub fn set_field_u8(&mut self, sfield: &SField, value: u8) {
+        rippled_bridge::rippled::setFieldU8(&self.instance, sfield.instance, value);
+    }
 
-    pub fn set_field_u16(&mut self, sfield: &SField, value: u16) {}
+    pub fn set_field_u16(&mut self, sfield: &SField, value: u16) {
+        rippled_bridge::rippled::setFieldU16(&self.instance, sfield.instance, value);
+    }
 
-    pub fn set_field_u32(&mut self, sfield: &SField, value: u32) {}
+    pub fn set_field_u32(&mut self, sfield: &SField, value: u32) {
+        rippled_bridge::rippled::setFieldU32(&self.instance, sfield.instance, value);
+    }
 
-    pub fn set_field_u64(&mut self, sfield: &SField, value: u64) {}
+    pub fn set_field_u64(&mut self, sfield: &SField, value: u64) {
+        rippled_bridge::rippled::setFieldU64(&self.instance, sfield.instance, value);
+    }
 
-    pub fn set_field_u160(&mut self, sfield: &SField, value: &Hash160) {}
+    pub fn set_field_h160(&mut self, sfield: &SField, value: &Hash160) {
+        rippled_bridge::rippled::setFieldH160(&self.instance, sfield.instance, &UInt160::from(value));
+    }
 
-    pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {}
+    pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {
+        rippled_bridge::rippled::setAccountID(&self.instance, sfield.instance, &AccountID::from(value));
+    }
 
-    pub fn set_field_blob(&mut self, sfield: &SField, value: &STBlob) {}
+    pub fn set_field_blob(&mut self, sfield: &SField, value: &STBlob) {
+        rippled_bridge::rippled::setFieldBlob(&self.instance, sfield.instance, value.instance);
+    }
 
     pub fn set_plugin_type(&self, field: &SField, value: &STPluginType) {
         rippled_bridge::rippled::setPluginType(&self.instance, field.instance, value.instance);
@@ -370,8 +382,15 @@ impl ApplyView<'_> {
         self.instance.as_mut().update(&sle.instance);
     }
 
-    pub fn dir_insert(&mut self, directory: &Keylet, key: &Keylet, describe: &AccountId) -> Option<u64> {
-        todo!()
+    pub fn dir_insert(&mut self, directory: &Keylet, key: &Keylet, account_id: &AccountId) -> Option<u64> {
+        println!("About to dirInsert");
+        let result: UniquePtr<OptionalUInt64> = rippled_bridge::rippled::dir_insert(self.instance.as_mut(), directory, key, &account_id.into());
+        println!("Done dirInsert");
+        if rippled_bridge::rippled::has_value(&result) {
+            Some(rippled_bridge::rippled::get_value(&result))
+        } else {
+            None
+        }
     }
 
     pub fn fees(&self) -> &Fees {
@@ -380,6 +399,20 @@ impl ApplyView<'_> {
 
     pub fn flags(&self) -> ApplyFlags {
         self.flags
+    }
+
+    pub fn adjust_owner_count(&mut self, sle: &SLE, amount: i32, j: &Journal) {
+        rippled_bridge::rippled::adjustOwnerCount(self.instance.as_mut(), &sle.instance, amount, j.instance);
+    }
+}
+
+pub struct Journal<'a> {
+    instance: &'a rippled_bridge::rippled::Journal,
+}
+
+impl Journal<'_> {
+    pub fn new(instance: &rippled_bridge::rippled::Journal) -> Journal {
+        Journal { instance }
     }
 }
 
@@ -399,6 +432,7 @@ pub struct ApplyContext<'a> {
     pub view: ApplyView<'a>,
     pub app: Application<'a>,
     pub base_fee: XrpAmount,
+    pub journal: Journal<'a>,
 }
 
 impl<'a> ApplyContext<'a> {
@@ -407,12 +441,14 @@ impl<'a> ApplyContext<'a> {
         let view = instance.as_mut().view();
         let app = instance.as_mut().getApp();
         let base_fee = instance.as_mut().getBaseFee();
+        let journal = instance.as_mut().getJournal();
         ApplyContext {
             instance,
             tx: STTx::new(tx),
             view: ApplyView::new(view),
             app: Application::new(app),
             base_fee: base_fee.into(),
+            journal: Journal::new(journal),
         }
     }
 }

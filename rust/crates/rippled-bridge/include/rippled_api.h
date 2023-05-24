@@ -13,6 +13,7 @@
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/ledger/View.h>
 #include "rust/cxx.h"
 
 std::unique_ptr <std::string>
@@ -55,6 +56,37 @@ void setPluginType(
         std::shared_ptr<ripple::SLE>const & sle,
         ripple::SField const& field,
         ripple::STPluginType const& v
+);
+
+void setFieldU8(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint8_t v
+);
+void setFieldU16(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint16_t v
+);
+void setFieldU32(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint32_t v
+);
+void setFieldU64(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    std::uint64_t v
+);
+void setFieldH160(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::uint160 const& v
+);
+void setFieldBlob(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::STBlob const& v
 );
 
 void makeFieldAbsent(
@@ -126,6 +158,7 @@ foo(std::unique_ptr<std::vector<ripple::FakeSOElement>> vec);*/
 //    gets passed in
 
 using OptionalSTVar = std::optional<ripple::detail::STVar>;
+using OptionalUInt64 = std::optional<std::uint64_t>;
 
 typedef const OptionalSTVar* (*parseLeafTypePtr)(
         ripple::SField const&,
@@ -179,6 +212,17 @@ ripple::SField const& getSField(int type_id, int field_id);
 
 std::shared_ptr<ripple::SLE> new_sle(ripple::Keylet const& k);
 
+std::unique_ptr<std::optional<std::uint64_t>>
+dir_insert(ripple::ApplyView& view, ripple::Keylet const& directory, ripple::Keylet const& key, ripple::AccountID const& account);
+bool has_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional);
+std::uint64_t get_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional);
+
+void
+adjustOwnerCount(
+    ripple::ApplyView& view,
+    std::shared_ptr<ripple::SLE> const& sle,
+    std::int32_t amount,
+    beast::Journal const& j);
 /*using TypedSTPluginType = ripple::TypedField<ripple::STPluginType>;
 ripple::SField const & makeTypedField(int tid, int fv, const char* fn);*/
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

@@ -356,6 +356,8 @@ public:
     setFieldVL(SField const& field, Blob const&);
     void
     setFieldVL(SField const& field, Slice const&);
+    void
+    setFieldBlob(SField const& field, STBlob const&);
 
     void
     setAccountID(SField const& field, AccountID const&);
