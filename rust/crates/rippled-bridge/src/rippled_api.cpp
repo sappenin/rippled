@@ -212,3 +212,7 @@ adjustOwnerCount(
 //    beast::Journal *journal = &j;
     ripple::adjustOwnerCount(view, sle, amount, j);
 }
+
+ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t const* data, std::size_t size) {
+    return *(new ripple::STBlob(field, data, size));
+}

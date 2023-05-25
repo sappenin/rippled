@@ -223,6 +223,8 @@ adjustOwnerCount(
     std::shared_ptr<ripple::SLE> const& sle,
     std::int32_t amount,
     beast::Journal const& j);
+
+ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t const* data, std::size_t size);
 /*using TypedSTPluginType = ripple::TypedField<ripple::STPluginType>;
 ripple::SField const & makeTypedField(int tid, int fv, const char* fn);*/
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

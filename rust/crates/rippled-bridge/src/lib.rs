@@ -263,7 +263,13 @@ pub mod rippled {
         pub unsafe fn data(self: &STPluginType) -> *const u8;
         pub fn size(self: &STPluginType) -> usize;
 
+        pub unsafe fn data(self: &STBlob) -> *const u8;
+        pub fn size(self: &STBlob) -> usize;
+
         pub fn new_sle(keylet: &Keylet) -> SharedPtr<SLE>;
+
+        // FIXME: Probably a memory leak
+        pub unsafe fn new_st_blob(sfield: &SField, data: *const u8, size: usize) -> &STBlob;
     }
 }
 

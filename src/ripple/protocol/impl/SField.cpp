@@ -242,7 +242,6 @@ CONSTRUCT_TYPED_SFIELD(sfUNLModifyValidator,    "UNLModifyValidator",   VL,     
 CONSTRUCT_TYPED_SFIELD(sfValidatorToDisable,    "ValidatorToDisable",   VL,        20);
 CONSTRUCT_TYPED_SFIELD(sfValidatorToReEnable,   "ValidatorToReEnable",  VL,        21);
 CONSTRUCT_TYPED_SFIELD(sfCFTMetadata,           "CFTMetadata",          VL,        22);
-CONSTRUCT_TYPED_SFIELD(sfPluginData,           "PluginData",            VL,        23);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);

@@ -599,7 +599,7 @@ JSS(warnings);                // out: server_info, server_state
 JSS(workers);
 JSS(write_load);   // out: GetCounts
 JSS(NegativeUNL);  // out: ValidatorList; ledger type
-JSS(CFTokenIssuance);  // out: ValidatorList; ledger type
+JSS(CFTokenIssuance);
 #undef JSS
 
 }  // namespace jss

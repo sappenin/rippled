@@ -139,13 +139,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::RustPTData,
-            ltPLUGIN_TRANSACTOR_DATA,
-            {
-                {sfPluginData, soeREQUIRED},
-        },
-        commonFields);
-
     // clang-format on
 }
 

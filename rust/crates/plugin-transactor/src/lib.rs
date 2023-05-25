@@ -268,7 +268,24 @@ impl STBlob<'_> {
     pub fn new(instance: &rippled_bridge::rippled::STBlob) -> STBlob {
         STBlob { instance }
     }
+
+    pub fn from_slice<'a>(field: &'a SField, slice: &'a [u8]) -> STBlob<'a> {
+        unsafe {
+            STBlob::new(rippled_bridge::rippled::new_st_blob(field.instance, slice.as_ptr(), slice.len()))
+        }
+    }
 }
+
+impl AsRef<[u8]> for STBlob<'_> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe {
+            let data: *const u8 = self.instance.data();
+            let size: usize = self.instance.size();
+            slice::from_raw_parts(data, size)
+        }
+    }
+}
+
 
 pub struct SLE {
     instance: SharedPtr<rippled_bridge::rippled::SLE>,
@@ -329,6 +346,10 @@ impl SLE {
 
     pub fn set_field_blob(&mut self, sfield: &SField, value: &STBlob) {
         rippled_bridge::rippled::setFieldBlob(&self.instance, sfield.instance, value.instance);
+    }
+
+    pub fn set_field_blob2(&mut self, sfield: &SField, value: &[u8]) {
+        rippled_bridge::rippled::setFieldBlob(&self.instance, sfield.instance, &STBlob::from_slice(sfield, value).instance);
     }
 
     pub fn set_plugin_type(&self, field: &SField, value: &STPluginType) {

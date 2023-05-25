@@ -84,6 +84,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cftoken_issuance_create2"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "hex",
+ "libc",
+ "once_cell",
+ "plugin-transactor",
+ "rippled-bridge",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "xrpl-rust-sdk-core",
+ "xrpl-serde",
+]
+
+[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
