@@ -39,6 +39,7 @@ typedef TER (*doApplyPtr)(
     ApplyContext& ctx,
     XRPAmount mPriorBalance,
     XRPAmount mSourceBalance);
+typedef TxConsequences (*txConsequencesPtr)(PreflightContext const&);
 
 struct TransactorWrapper
 {
@@ -46,6 +47,7 @@ struct TransactorWrapper
     preclaimPtr preclaim;
     calculateBaseFeePtr calculateBaseFee;
     doApplyPtr doApply;
+    std::optional<txConsequencesPtr> txConsequencesPtr;
 };
 
 std::pair<TER, bool>
@@ -64,6 +66,20 @@ transactor_helper()
         T::preclaim,
         T::calculateBaseFee,
         T::doApply,
+        std::optional<txConsequencesPtr>()
+    };
+};
+
+template <class T>
+TransactorWrapper
+transactor_helper_with_consequences()
+{
+    return {
+        T::preflight,
+        T::preclaim,
+        T::calculateBaseFee,
+        T::doApply,
+        T::makeTxConsequences
     };
 };
 
@@ -71,17 +87,19 @@ TransactorWrapper
 transactor_helper(std::string pathToLib)
 {
     void* handle = dlopen(pathToLib.c_str(), RTLD_LAZY);
+
+    auto consequencesPtr = (txConsequencesPtr)dlsym(handle, "makeTxConsequences");
     return {
         (preflightPtr)dlsym(handle, "preflight"),
         (preclaimPtr)dlsym(handle, "preclaim"),
         (calculateBaseFeePtr)dlsym(handle, "calculateBaseFee"),
         (doApplyPtr)dlsym(handle, "doApply"),
-    };
+        consequencesPtr == nullptr ? std::optional<txConsequencesPtr>() : std::optional<txConsequencesPtr>(consequencesPtr)};
 };
 
 std::map<std::uint16_t, TransactorWrapper> transactorMap{
-    {0, transactor_helper<Payment>()},
-    {3, transactor_helper<SetAccount>()},
+    {0, transactor_helper_with_consequences<Payment>()},
+    {3, transactor_helper_with_consequences<SetAccount>()},
     {5, transactor_helper<SetRegularKey>()},
     {12, transactor_helper<SetSignerList>()},
     {21, transactor_helper<DeleteAccount>()},
@@ -97,9 +115,13 @@ addToTransactorMap(std::uint16_t type, std::string dynamicLib)
 }
 
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequences_helper(TransactorWrapper transactorWrapper, PreflightContext const& ctx)
 {
-    // TODO: add support for Blocker and Custom TxConsequences values
+    // TODO: This only works for Custom TxConsequences, not Blocker. We only
+    //  need Custom for Payment so not taking the time to deal with Blockers.
+    if (transactorWrapper.txConsequencesPtr.has_value()) {
+        return transactorWrapper.txConsequencesPtr.value()(ctx);
+    }
     return TxConsequences(ctx.tx);
 }
 
@@ -112,7 +134,7 @@ invoke_preflight(PreflightContext const& ctx)
         auto const tec = it->second.preflight(ctx);
         return {
             tec,
-            isTesSuccess(tec) ? consequences_helper(ctx) : TxConsequences{tec}};
+            isTesSuccess(tec) ? consequences_helper(it->second, ctx) : TxConsequences{tec}};
     }
     assert(false);
     return {temUNKNOWN, TxConsequences{temUNKNOWN}};

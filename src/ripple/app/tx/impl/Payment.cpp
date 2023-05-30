@@ -58,12 +58,6 @@ Payment::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-//    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
-//    bool const limitQuality = uTxFlags & tfLimitQuality;
-//    bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
-    //    bool const bPaths = tx.isFieldPresent(sfPaths);
-//    bool const bMax = tx.isFieldPresent(sfSendMax);
-
     STAmount const saDstAmount(tx.getFieldAmount(sfAmount));
 
     auto const account = tx.getAccountID(sfAccount);

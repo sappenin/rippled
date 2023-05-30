@@ -17,6 +17,10 @@ pub trait Transactor {
     fn tx_format() -> Vec<SOElement>;
 }
 
+/*pub trait MakeTxConsequences {
+    fn make_tx_consequences(ctx: PreflightContext) -> TxConsequences;
+}*/
+
 pub struct SOElement {
     pub field_code: i32,
     pub style: SOEStyle
