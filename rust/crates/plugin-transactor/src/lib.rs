@@ -9,8 +9,10 @@ use cxx::{CxxVector, SharedPtr, UniquePtr};
 pub use transactor::Transactor;
 
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
-use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, UInt160};
+use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC, UInt160, XRPAmount};
 use rippled_bridge::rippled::{OptionalUInt64, setFlag};
+use rippled_bridge::TEScodes::tesSUCCESS;
+use rippled_bridge::tx_consequences::SeqProxy;
 
 pub struct PreflightContext<'a> {
     instance: &'a rippled_bridge::rippled::PreflightContext,
@@ -67,6 +69,10 @@ impl STTx<'_> {
         self.as_st_object().getFieldH160(field.instance).into()
     }
 
+    pub fn get_amount(&self, field: &SField) -> STAmount {
+        STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
+    }
+
     pub fn get_u8(&self, field: &SField) -> u8 {
         self.as_st_object().getFieldU8(field.instance)
     }
@@ -93,6 +99,10 @@ impl STTx<'_> {
 
     pub fn is_field_present(&self, field: &SField) -> bool {
         self.as_st_object().isFieldPresent(field.instance)
+    }
+
+    pub fn seq_proxy(&self) -> SeqProxy {
+        self.instance.getSeqProxy()
     }
 
     fn as_st_object(&self) -> &rippled_bridge::rippled::STObject {
@@ -179,10 +189,44 @@ impl SField<'_> {
         }
     }
 
+    pub fn sf_fee() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfFee()
+        }
+    }
+
+    pub fn sf_amount() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfAmount()
+        }
+    }
+
+    pub fn sf_invoice_id() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfInvoiceId()
+        }
+    }
+
+    pub fn sf_destination() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfDestination()
+        }
+    }
+
+    pub fn sf_destination_tag() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfDestinationTag()
+        }
+    }
+
     pub fn get_plugin_field(type_id: i32, field_id: i32) -> Self {
         SField {
             instance: rippled_bridge::rippled::getSField(type_id, field_id)
         }
+    }
+
+    pub fn code(&self) -> i32 {
+        self.instance.getCode()
     }
 }
 
@@ -253,6 +297,10 @@ impl STAmount<'_> {
         STAmount {
             instance
         }
+    }
+
+    pub fn negative(&self) -> bool {
+        self.instance.negative()
     }
 
     pub fn xrp(&self) -> XrpAmount {
@@ -470,6 +518,48 @@ impl<'a> ApplyContext<'a> {
             app: Application::new(app),
             base_fee: base_fee.into(),
             journal: Journal::new(journal),
+        }
+    }
+}
+
+pub struct TxConsequences {
+    inner: rippled_bridge::tx_consequences::TxConsequences,
+}
+
+impl TxConsequences {
+    pub fn with_potential_spend(tx: &STTx, potential_spend: XrpAmount) -> Self {
+        let fee = tx.get_amount(&SField::sf_fee());
+        TxConsequences {
+            inner: rippled_bridge::tx_consequences::TxConsequences::new(
+                false,
+                if fee.negative() { fee.xrp().into() } else { XRPAmount::zero() },
+                potential_spend.into(),
+                tx.seq_proxy(),
+                1
+            )
+        }
+    }
+}
+
+impl From<TxConsequences> for rippled_bridge::tx_consequences::TxConsequences {
+    fn from(value: TxConsequences) -> Self {
+        value.inner
+    }
+}
+
+impl From<NotTEC> for TxConsequences {
+    fn from(value: NotTEC) -> Self {
+        if value == tesSUCCESS {
+            panic!("Preflight result must not be tesSUCCESS");
+        }
+        TxConsequences {
+            inner: rippled_bridge::tx_consequences::TxConsequences::new(
+                false,
+                XRPAmount::zero(),
+                XRPAmount::zero(),
+                SeqProxy::sequence(0),
+                0
+            )
         }
     }
 }

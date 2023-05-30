@@ -11,6 +11,7 @@ use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, XrpAmount
 
 pub mod ter;
 pub mod flags;
+pub mod tx_consequences;
 
 pub use ter::{TER, NotTEC, TEFcodes, TEMcodes, TELcodes, TECcodes, TEScodes, TERcodes};
 pub use flags::{LedgerSpecificFlags, ApplyFlags};
@@ -92,6 +93,7 @@ pub mod rippled {
         pub type STBlob;
         #[namespace = "beast"]
         pub type Journal;
+        pub type SeqProxy = super::tx_consequences::SeqProxy;
 
 
         ////////////////////////////////
@@ -166,6 +168,8 @@ pub mod rippled {
         pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
 
+        pub fn getSeqProxy(self: &STTx) -> SeqProxy;
+
         pub fn setFlag(sle: &SharedPtr<SLE>, f: u32) -> bool;
         pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
         pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
@@ -180,6 +184,7 @@ pub mod rippled {
         pub fn makeFieldAbsent(sle: &SharedPtr<SLE>, field: &SField);
 
         pub fn xrp(self: &STAmount) -> XRPAmount;
+        pub fn negative(self: &STAmount) -> bool;
 
         pub fn sfRegularKey() -> &'static SField;
         pub fn sfAccount() -> &'static SField;
@@ -189,6 +194,11 @@ pub mod rippled {
         pub fn sfFlags() -> &'static SField;
         pub fn sfIssuer() -> &'static SField;
         pub fn sfTransferFee() -> &'static SField;
+        pub fn sfFee() -> &'static SField;
+        pub fn sfAmount() -> &'static SField;
+        pub fn sfInvoiceId() -> &'static SField;
+        pub fn sfDestinationTag() -> &'static SField;
+        pub fn sfDestination() -> &'static SField;
 
         // pub fn sfTicketSequence() -> &'static SField;
         pub fn getSField(type_id: i32, field_id: i32) -> &'static SField;

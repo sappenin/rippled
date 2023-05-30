@@ -141,6 +141,25 @@ constexpr ripple::SField const& sfTransferFee() {
     return ripple::sfTransferFee;
 }
 
+constexpr ripple::SField const& sfFee() {
+    return ripple::sfFee;
+}
+
+constexpr ripple::SField const& sfAmount() {
+    return ripple::sfAmount;
+}
+
+constexpr ripple::SField const& sfInvoiceId() {
+    return ripple::sfInvoiceID;
+}
+
+constexpr ripple::SField const& sfDestination() {
+    return ripple::sfDestination;
+}
+
+constexpr ripple::SField const& sfDestinationTag() {
+    return ripple::sfDestinationTag;
+}
 /*constexpr ripple::SField const& sfTicketSequence() {
     return ripple::sfTicketSequence;
 }*/
