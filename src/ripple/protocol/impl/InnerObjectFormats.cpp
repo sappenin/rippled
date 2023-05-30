@@ -52,6 +52,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfPublicKey, soeREQUIRED},
             {sfFirstLedgerSequence, soeREQUIRED},
         });
+    add(sfCFToken.jsonName.c_str(),
+        sfCFToken.getCode(),
+        {
+            {sfCFTIssuanceID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfLockedAmount, soeDEFAULT},
+            {sfFlags, soeDEFAULT}
+        });
 }
 
 InnerObjectFormats const&

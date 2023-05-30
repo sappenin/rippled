@@ -477,6 +477,7 @@ extern SF_UINT256 const sfCheckID;
 extern SF_UINT256 const sfValidatedHash;
 extern SF_UINT256 const sfPreviousPageMin;
 extern SF_UINT256 const sfNextPageMin;
+extern SF_UINT256 const sfCFTIssuanceID;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
@@ -562,6 +563,7 @@ extern SField const sfHookExecution;
 extern SField const sfHookDefinition;
 extern SField const sfHookParameter;
 extern SField const sfHookGrant;
+extern SField const sfCFToken;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -580,6 +582,7 @@ extern SField const sfDisabledValidators;
 extern SField const sfHookExecutions;
 extern SField const sfHookParameters;
 extern SField const sfHookGrants;
+extern SField const sfCFTokens;
 
 //------------------------------------------------------------------------------
 

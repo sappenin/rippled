@@ -254,6 +254,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltFEE_SETTINGS:
             case ltNEGATIVE_UNL:
             case ltCFTOKEN_ISSUANCE:
+            case ltCFTOKEN_PAGE:
                 break;
             default:
                 invalidTypeAdded_ = true;

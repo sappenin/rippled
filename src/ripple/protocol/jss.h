@@ -600,6 +600,7 @@ JSS(workers);
 JSS(write_load);   // out: GetCounts
 JSS(NegativeUNL);  // out: ValidatorList; ledger type
 JSS(CFTokenIssuance);
+JSS(CFTokenPage);
 #undef JSS
 
 }  // namespace jss
