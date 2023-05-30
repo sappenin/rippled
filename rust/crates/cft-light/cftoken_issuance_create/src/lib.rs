@@ -7,14 +7,10 @@ use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
 use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STTx, TF_UNIVERSAL_MASK, Transactor};
-use plugin_transactor::transactor::SOElement;
+use plugin_transactor::transactor::{SOElement, WriteToSle};
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
 use rippled_bridge::TEScodes::tesSUCCESS;
-
-pub trait WriteToSle {
-    fn write_to_sle(&self, sle: &mut SLE);
-}
 
 pub struct CFTokenIssuance<'a> {
     transfer_fee: Option<u16>,
@@ -252,63 +248,3 @@ pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
         push_soelement(element.field_code, element.style, elements.as_mut());
     }
 }
-
-
-// Things we need:
-// 1. New SType called CFTAmount (don't need until Payment)
-// 2. New SFields for CFTokenIssuanceCreate [DONE (in C++)]
-// 2. New ledger object called CFTokenIssuance [DONE (in C++)]
-// 3. New ledger object called CFToken [DONE (in C++)]
-// 4. New transactor CFTokenIssuanceCreate
-// 5. Add new ledger objects to LedgerEntry.cpp doLedgerEntry RPC handler
-// 6. Add keylets to look up CFTokenIssuances by
-//      1.
-// 7. Add keylets to look up CFTokens by
-//      1.
-
-//////////////
-// TODO: Figure Out where these go.
-//////////////
-
-// LedgerFormats.h
-// /** A ledger object which identifies an the issuance details of a CFT.
-//
-//        \sa keylet::cftissuance
-//  */
-// ltCFTOKEN_ISSUANCE = 0x0033,
-
-// /** A ledger object which contains a list of CFTs
-
-       // \sa keylet::cftpage_min, keylet::cftpage_max, keylet::cftpage
- // */
-// ltCFTOKEN_PAGE = 0x0034,
-
-
-////////////
-// For LAter
-////////////
-
-// /**
-// @ingroup protocol
-//  */
-// enum LedgerSpecificFlags {
-
-// }
-
-// TODO: Define SField in xrpl-rs?
-// TODO: Where to define the TxType? TxFormats.h?
-    // ttCFTOKEN_ISSUANCE_CREATE = 30
-
-
-// SFields for CFTokenIssuance
-// sfFlags --> already exists in SField.cpp
-// sfIssuer ==> "Issuer" | ACCOUNT, 4 --> already exists in SField.cpp?
-// sfCurrencyCode ==> "CFTCurrencyCode" | UINT160 | 5
-// sfAssetScale ==> "AssetScale" | UINT8 | 4
-// sfTransferFee ==> "TransferFee" | UINT16 |
-// sfMaximumAmount ==> "MaximumAmount" | UINT64 | 14
-// sfOutstandingAmount ==> "OutstandingAmount" | UINT64 | 15
-// sfLockedAmount ==> "LockedAmount" | UINT64 | 16
-
-// sfMetadata => "Metadata" | BLOB | --> CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA,    257);
-// CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);

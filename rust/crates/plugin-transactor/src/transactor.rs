@@ -1,7 +1,11 @@
 use std::pin::Pin;
 use xrpl_rust_sdk_core::core::types::XrpAmount;
 use rippled_bridge::{NotTEC, SOEStyle, TER};
-use crate::{ApplyContext, PreclaimContext, PreflightContext, ReadView, STTx};
+use crate::{ApplyContext, PreclaimContext, PreflightContext, ReadView, SLE, STTx};
+
+pub trait WriteToSle {
+    fn write_to_sle(&self, sle: &mut SLE);
+}
 
 pub trait Transactor {
     fn pre_flight(ctx: PreflightContext) -> NotTEC;
