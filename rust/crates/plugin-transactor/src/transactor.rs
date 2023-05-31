@@ -17,7 +17,7 @@ pub trait Transactor {
     fn tx_format() -> Vec<SOElement>;
 }
 
-pub trait MakeTxConsequences {
+pub trait MakeTxConsequences: Transactor {
     fn make_tx_consequences(ctx: PreflightContext) -> TxConsequences;
 }
 

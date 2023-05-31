@@ -575,6 +575,7 @@ pub fn preflight2(ctx: &PreflightContext) -> rippled_bridge::NotTEC {
 pub const TF_FULLY_CANONICAL_SIG: u32 = 0x80000000;
 pub const TF_UNIVERSAL: u32 = TF_FULLY_CANONICAL_SIG;
 pub const TF_UNIVERSAL_MASK: u32 = !TF_UNIVERSAL;
+pub const TF_PAYMENT_MASK: u32 = !TF_UNIVERSAL;
 
 pub fn minimum_fee(app: &mut Application, base_fee: XrpAmount, fees: &Fees, flags: ApplyFlags) -> XrpAmount {
     rippled_bridge::rippled::minimumFee(app.instance.as_mut(), base_fee.into(), fees.instance, flags).into()
