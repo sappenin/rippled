@@ -157,6 +157,7 @@ CONSTRUCT_TYPED_SFIELD(sfReferenceCount,        "ReferenceCount",       UINT64, 
 CONSTRUCT_TYPED_SFIELD(sfMaximumAmount,         "MaximumAmount",        UINT64,    20);
 CONSTRUCT_TYPED_SFIELD(sfOutstandingAmount,     "OutstandingAmount",    UINT64,    21);
 CONSTRUCT_TYPED_SFIELD(sfLockedAmount,          "LockedAmount",         UINT64,    22);
+CONSTRUCT_TYPED_SFIELD(sfCFTAmount,             "CFTAmount",            UINT64,    23);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);

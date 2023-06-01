@@ -441,6 +441,7 @@ extern SF_UINT64 const sfReferenceCount;
 extern SF_UINT64 const sfMaximumAmount;
 extern SF_UINT64 const sfOutstandingAmount;
 extern SF_UINT64 const sfLockedAmount;
+extern SF_UINT64 const sfCFTAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;

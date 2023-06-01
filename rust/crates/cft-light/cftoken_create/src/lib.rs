@@ -6,18 +6,56 @@ use std::vec;
 use cxx::{CxxString, CxxVector, let_cxx_string, SharedPtr, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
-use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
-use plugin_transactor::{ApplyContext, ConstSLE, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STAmount, STTx, TF_PAYMENT_MASK, TF_UNIVERSAL_MASK, Transactor, TxConsequences};
+use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
+use plugin_transactor::{ApplyContext, ConstSLE, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STAmount, STObject, STTx, TF_PAYMENT_MASK, TF_UNIVERSAL_MASK, Transactor, TxConsequences};
 use plugin_transactor::transactor::{MakeTxConsequences, SOElement, WriteToSle};
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::LedgerSpecificFlags::lsfRequireDestTag;
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
 use rippled_bridge::TECcodes::{tecDST_TAG_NEEDED, tecNO_DST_INSUF_XRP, tecUNFUNDED_PAYMENT};
 use rippled_bridge::TEFcodes::tefINTERNAL;
-use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temINVALID_FLAG, temREDUNDANT};
+use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temBAD_ISSUER, temINVALID_FLAG, temREDUNDANT};
+use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
 
+/// {
+///   account: AccountID,
+///   issuer: AccountID,
+///   AssetCode: UInt160,
+/// }
+
+pub struct CFToken<'a> {
+    inner: &'a STObject<'a>
+}
+
+impl CFToken<'_> {
+    pub fn issuance_id(&self) -> Hash256 {
+        self.inner.get_h256(&SField::get_plugin_field(5, 28))
+    }
+
+    pub fn amount(&self) -> u64 {
+        self.inner.get_uint64(&SField::get_plugin_field(3, 23))
+    }
+
+    pub fn locked_amount(&self) -> u64 {
+        self.inner.get_uint64(&SField::get_plugin_field(3, 22))
+    }
+
+    pub fn flags(&self) -> u32 {
+        self.inner.get_uint32(&SField::sf_flags())
+    }
+}
+
 struct CFTokenCreate;
+
+type CFTokenIssuanceID = Hash256;
+type CFTokenID = CFTokenIssuanceID;
+pub fn find_cftoken<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFToken<'a>> {
+    todo!()
+}
+
+// TODO: Move this into a shared crate called cft-core
+const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
 impl Transactor for CFTokenCreate {
     fn pre_flight(ctx: PreflightContext) -> NotTEC {
@@ -31,11 +69,45 @@ impl Transactor for CFTokenCreate {
             return temINVALID_FLAG.into();
         }
 
+        if ctx.tx().get_account_id(&SField::sf_account()) == ctx.tx().get_account_id(&SField::sf_issuer()) {
+            // TODO: Revisit if this is the correct error code
+            return temBAD_ISSUER.into();
+        }
+
         preflight2(&ctx)
     }
 
     fn pre_claim(ctx: PreclaimContext) -> TER {
-        tesSUCCESS.into()
+        // 1. Source account exists.
+        // 2. Issuance exists.
+        // 3. Account doesn't already hold the token.
+        // 4. (future) Make sure the issuance isn't frozen. This will happen in payment, but
+        //    might as well save the ledger some storage by refusing to create a CFToken.
+        // 4. (future) lsfDisableIncomingCFTs is not enabled on the issuance.
+        //     (Setting that flag on the issuance would allow the issuer to effectively
+        //     stop anyone who doesn't already hold the token from holding the token. This
+        //     could be used to create a "closed loop" system with your CFT.
+
+        let source_account_id = ctx.tx.get_account_id(&SField::sf_account());
+        let source_keylet = Keylet::account(&source_account_id);
+        // TODO: Maybe we don't need to check if the source account exists -- this may
+        //  happen at a higher layer?
+        match ctx.view.read(&source_keylet) {
+            None => terNO_ACCOUNT.into(),
+            Some(_) => {
+                let issuance_keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
+                    .key(ctx.tx.get_account_id(&SField::sf_issuer()))
+                    .key(ctx.tx.get_uint160(&SField::get_plugin_field(17, 5)))
+                    .build();
+                if ctx.view.read(&issuance_keylet).is_none() {
+                    return temBAD_ISSUER.into();
+                }
+                match find_cftoken(&ctx.view, &source_account_id, &issuance_keylet.into()) {
+                    None => tesSUCCESS.into(),
+                    Some(_) => temREDUNDANT.into()
+                }
+            }
+        }
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {

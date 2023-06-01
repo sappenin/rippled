@@ -411,6 +411,14 @@ impl SLE {
         self.as_st_object().deref().getFieldU32(field.instance)
     }
 
+    pub fn get_uint64(&self, field: &SField) -> u64 {
+        self.as_st_object().deref().getFieldU64(field.instance)
+    }
+
+    pub fn get_h256(&self, field: &SField) -> Hash256 {
+        self.as_st_object().deref().getFieldH256(field.instance).into()
+    }
+
     pub fn get_amount(&self, field: &SField) -> STAmount {
         STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
     }
@@ -477,6 +485,41 @@ impl From<&Keylet> for SLE {
         SLE::new(
             rippled_bridge::rippled::new_sle(value)
         )
+    }
+}
+
+
+pub struct STObject<'a> {
+    instance: &'a rippled_bridge::rippled::STObject,
+}
+
+impl STObject<'_> {
+    pub fn new(instance: &rippled_bridge::rippled::STObject) -> STObject {
+        STObject { instance }
+    }
+
+    pub fn get_account_id(&self, field: &SField) -> AccountId {
+        self.instance.getAccountID(field.instance).into()
+    }
+
+    pub fn get_uint32(&self, field: &SField) -> u32 {
+        self.instance.getFieldU32(field.instance)
+    }
+
+    pub fn get_uint64(&self, field: &SField) -> u64 {
+        self.instance.getFieldU64(field.instance)
+    }
+
+    pub fn get_h256(&self, field: &SField) -> Hash256 {
+        self.instance.getFieldH256(field.instance).into()
+    }
+
+    pub fn get_amount(&self, field: &SField) -> STAmount {
+        STAmount::new(self.instance.getFieldAmount(field.instance))
+    }
+
+    pub fn is_flag(&self, flag: LedgerSpecificFlags) -> bool {
+        self.instance.isFlag(flag.into())
     }
 }
 

@@ -7,7 +7,7 @@ use cxx::{CxxString, CxxVector, ExternType, SharedPtr, type_id, UniquePtr};
 use cxx::kind::Trivial;
 use cxx::vector::VectorElement;
 use sha2::{Sha512, Digest};
-use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, XrpAmount};
+use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, Hash256, XrpAmount};
 
 pub mod ter;
 pub mod flags;
@@ -19,6 +19,7 @@ use crate::rippled::{OptionalSTVar, SerialIter, SField, STBase, STPluginType, Va
 
 #[cxx::bridge]
 pub mod rippled {
+
     extern "Rust" {
         // This function is unused, but exists only to ensure that line 11's interface is bridge
         // compatible.
@@ -69,7 +70,7 @@ pub mod rippled {
         pub type ApplyView;
         pub type STTx;
         pub type Rules;
-        pub type uint256;
+        pub type uint256 = super::UInt256;
         pub type uint160 = super::UInt160;
         type Transactor;
         pub type SField;
@@ -158,10 +159,12 @@ pub mod rippled {
 
         pub fn isFieldPresent(self: &STObject, field: &SField) -> bool;
         pub fn isFlag(self: &SLE, f: u32) -> bool;
+        pub fn isFlag(self: &STObject, f: u32) -> bool;
 
         pub fn getAccountID(self: &STObject, field: &SField) -> AccountID;
         pub fn getFieldH160(self: &STObject, field: &SField) -> uint160;
         pub fn getFieldU32(self: &STObject, field: &SField) -> u32;
+        pub fn getFieldH256(self: &STObject, field: &SField) -> uint256;
         pub fn getFieldU8(self: &STObject, field: &SField) -> u8;
         pub fn getFieldU16(self: &STObject, field: &SField) -> u16;
         pub fn getFieldU64(self: &STObject, field: &SField) -> u64;
@@ -622,6 +625,12 @@ impl Keylet {
     }
 }
 
+impl From<Keylet> for Hash256 {
+    fn from(value: Keylet) -> Self {
+        Hash256::from(value.key)
+    }
+}
+
 #[test]
 fn test_new_keylet() {
     let account_k_1 = Keylet::builder(LedgerEntryType::ltACCOUNT_ROOT, LedgerNameSpace::Account)
@@ -722,5 +731,37 @@ impl From<&Hash160> for UInt160 {
 
 unsafe impl cxx::ExternType for UInt160 {
     type Id = type_id!("ripple::uint160");
+    type Kind = Trivial;
+}
+
+#[repr(C)]
+pub struct UInt256 {
+    data: [u8; 32]
+}
+
+impl From<UInt256> for Hash256 {
+    fn from(value: UInt256) -> Self {
+        Hash256::try_from(value.data.as_ref()).unwrap()
+    }
+}
+
+impl From<Hash256> for UInt256 {
+    fn from(value: Hash256) -> Self {
+        UInt256 {
+            data: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+impl From<&Hash256> for UInt256 {
+    fn from(value: &Hash256) -> Self {
+        UInt256 {
+            data: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+unsafe impl cxx::ExternType for UInt256 {
+    type Id = type_id!("ripple::uint256");
     type Kind = Trivial;
 }
