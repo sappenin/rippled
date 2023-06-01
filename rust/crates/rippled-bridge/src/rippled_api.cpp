@@ -59,6 +59,14 @@ void setAccountID(
     sle->setAccountID(field, v);
 }
 
+void setFieldAmountXRP(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::XRPAmount const& xrpAmount
+) {
+    sle->setFieldAmount(field, ripple::STAmount(xrpAmount));
+}
+
 void setPluginType(
         std::shared_ptr<ripple::SLE>const & sle,
         ripple::SField const& field,

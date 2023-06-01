@@ -3,6 +3,7 @@ extern crate core;
 pub mod transactor;
 
 use core::slice;
+use std::cmp::Ordering;
 use std::ops::Deref;
 use std::pin::Pin;
 use cxx::{CxxVector, SharedPtr, UniquePtr};
@@ -153,6 +154,12 @@ impl SField<'_> {
         }
     }
 
+    pub fn sf_sequence() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfSequence()
+        }
+    }
+
     pub fn sf_owner_count() -> Self {
         SField {
             instance: rippled_bridge::rippled::sfOwnerCount()
@@ -272,6 +279,19 @@ impl<'a> ReadView<'a> {
     pub fn exists(&self, key: &Keylet) -> bool {
         self.instance.exists(key)
     }
+
+    pub fn read(&self, key: &Keylet) -> Option<ConstSLE> {
+        let maybe_sle = rippled_bridge::rippled::read(self.instance, key);
+        if maybe_sle.is_null() {
+            None
+        } else {
+            Some(ConstSLE::new(maybe_sle))
+        }
+    }
+
+    pub fn fees(&self) -> Fees {
+        Fees::new(self.instance.fees())
+    }
 }
 
 pub struct Fees<'a> {
@@ -306,6 +326,32 @@ impl STAmount<'_> {
     pub fn xrp(&self) -> XrpAmount {
         self.instance.xrp().into()
     }
+
+    pub fn is_zero(&self) -> bool {
+        rippled_bridge::rippled::is_zero(self.instance)
+    }
+
+    pub fn native(&self) -> bool {
+        self.instance.native()
+    }
+}
+
+impl PartialEq<Self> for STAmount<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        rippled_bridge::rippled::st_amount_eq(self.instance, other.instance)
+    }
+}
+
+impl PartialOrd for STAmount<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else if rippled_bridge::rippled::st_amount_gt(self.instance, other.instance) {
+            Some(Ordering::Greater)
+        } else {
+            Some(Ordering::Less)
+        }
+    }
 }
 
 pub struct STBlob<'a> {
@@ -334,6 +380,19 @@ impl AsRef<[u8]> for STBlob<'_> {
     }
 }
 
+pub struct ConstSLE {
+    instance: SharedPtr<rippled_bridge::rippled::ConstSLE>,
+}
+
+impl ConstSLE {
+    pub fn new(instance: SharedPtr<rippled_bridge::rippled::ConstSLE>) -> Self {
+        ConstSLE { instance }
+    }
+
+    pub fn flags(&self) -> u32 {
+        self.instance.getFlags()
+    }
+}
 
 pub struct SLE {
     instance: SharedPtr<rippled_bridge::rippled::SLE>,
@@ -390,6 +449,10 @@ impl SLE {
 
     pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {
         rippled_bridge::rippled::setAccountID(&self.instance, sfield.instance, &AccountID::from(value));
+    }
+
+    pub fn set_field_amount_xrp(&self, sfield: &SField, value: XrpAmount) {
+        rippled_bridge::rippled::setFieldAmountXRP(&self.instance, sfield.instance, &XRPAmount::from(value));
     }
 
     pub fn set_field_blob(&mut self, sfield: &SField, value: &STBlob) {
@@ -470,6 +533,9 @@ impl ApplyView<'_> {
         self.flags
     }
 
+    pub fn seq(&self) -> u32 {
+        self.instance.seq()
+    }
     pub fn adjust_owner_count(&mut self, sle: &SLE, amount: i32, j: &Journal) {
         rippled_bridge::rippled::adjustOwnerCount(self.instance.as_mut(), &sle.instance, amount, j.instance);
     }

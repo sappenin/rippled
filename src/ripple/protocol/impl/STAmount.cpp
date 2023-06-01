@@ -94,6 +94,13 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
             mIsNegative = true;
             return;
         } else {
+            // TODO: XRP is allowed to be negative. Should we allow CFT
+            //  amounts to be negative? Per the spec, CFT amounts cannot
+            //  be negative, nor can XRP amounts, but maybe there is some
+            //  good reason why XRP amounts can be negative in STAmount.
+            if ((value & cPosNative) == 0) {
+                Throw<std::runtime_error>("CFT Amounts cannot be negative");
+            }
             // CFT Amounts have 5 reserved bits after the Not-XRP, sign,
             // and isCFT bit before the 64-bit amount. We have already parsed
             // 64 bits, meaning there are 8 bits left to read to get the 64
@@ -105,13 +112,11 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
             Issue issue;
             issue.currency = sit.get160();
             if (isXRP(issue.currency))
-                Throw<std::runtime_error>("CFT currency cannot be XRP.");
+                Throw<std::runtime_error>("CFT currency cannot be XRP");
             issue.account = sit.get160();
             if (isXRP(issue.account))
-                Throw<std::runtime_error>("CFT issuer cannot be XRP issuer (account zero).");
+                Throw<std::runtime_error>("CFT issuer cannot be XRP issuer (account zero)");
 
-            // TODO: XRP is allowed to be negative. Should we allow CFT
-            //  amounts to be negative?
             mValue = amount;
             mOffset = 0;
             mType = Type::CFT;
@@ -200,6 +205,9 @@ STAmount::STAmount(
 {
 }
 
+// TODO: This constructor could be called with an XRP Issue/Type. canonicalize()
+//  gets called -- does it do anything? Is the code in canonicalize() for XRP
+//  dead code?
 STAmount::STAmount(
     SField const& name,
     Issue const& issue,
@@ -255,6 +263,9 @@ STAmount::STAmount(
     canonicalize();
 }
 
+// TODO: This constructor could be called with an XRP Issue. canonicalize()
+//  gets called -- does it do anything? Is the code in canonicalize() for XRP
+//  dead code?
 STAmount::STAmount(Issue const& issue, Type type, std::int64_t mantissa, int exponent)
     : mIssue(issue), mOffset(exponent), mType(type)
 {

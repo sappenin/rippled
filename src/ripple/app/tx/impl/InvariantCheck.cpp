@@ -319,7 +319,8 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == getTxTypeFromName("ttPAYMENT") && result == tesSUCCESS)
+    // FIXME: Remove ttPAYMENT_2 once we replace PAYMENT with PAYMENT_2
+    if ((tx.getTxnType() == getTxTypeFromName("ttPAYMENT") || tx.getTxnType() == getTxTypeFromName("ttPAYMENT_2")) && result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};

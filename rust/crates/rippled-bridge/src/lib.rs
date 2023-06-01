@@ -130,6 +130,7 @@ pub mod rippled {
         pub type STypeFromSFieldFnPtr = super::STypeFromSFieldFnPtr;
         pub type OptionalSTVar;
         pub type OptionalUInt64;
+        pub type ConstSLE;
 
         pub fn base64_decode_ptr(s: &CxxString) -> UniquePtr<CxxString>;
 
@@ -172,6 +173,7 @@ pub mod rippled {
 
         pub fn setFlag(sle: &SharedPtr<SLE>, f: u32) -> bool;
         pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
+        pub fn setFieldAmountXRP(sle: &SharedPtr<SLE>, field: &SField, v: &XRPAmount);
         pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
         pub fn setFieldU8(sle: &SharedPtr<SLE>, field: &SField, v: u8);
         pub fn setFieldU16(sle: &SharedPtr<SLE>, field: &SField, v: u16);
@@ -185,9 +187,14 @@ pub mod rippled {
 
         pub fn xrp(self: &STAmount) -> XRPAmount;
         pub fn negative(self: &STAmount) -> bool;
+        pub fn is_zero(amount: &STAmount) -> bool;
+        pub fn native(self: &STAmount) -> bool;
+        pub fn st_amount_gt(amount1: &STAmount, amount2: &STAmount) -> bool;
+        pub fn st_amount_eq(amount1: &STAmount, amount2: &STAmount) -> bool;
 
         pub fn sfRegularKey() -> &'static SField;
         pub fn sfAccount() -> &'static SField;
+        pub fn sfSequence() -> &'static SField;
         pub fn sfOwnerCount() -> &'static SField;
         pub fn sfOwnerNode() -> &'static SField;
         pub fn sfBalance() -> &'static SField;
@@ -212,6 +219,9 @@ pub mod rippled {
         pub fn getTx(self: &PreclaimContext) -> &STTx;
 
         pub fn exists(self: &ReadView, key: &Keylet) -> bool;
+        pub fn read(read_view: &ReadView, key: &Keylet) -> SharedPtr<ConstSLE>;
+        pub fn getFlags(self: &ConstSLE) -> u32;
+        pub fn fees<'a, 'b>(self: &'a ReadView) -> &'b Fees;
 
         pub fn toBase58(v: &AccountID) -> UniquePtr<CxxString>;
         pub fn view<'a, 'b>(self: Pin<&'a mut ApplyContext>) -> Pin<&'b mut ApplyView>;
@@ -226,6 +236,7 @@ pub mod rippled {
         pub fn dir_insert(apply_view: Pin<&mut ApplyView>, directory: &Keylet, key: &Keylet, account_id: &AccountID) -> UniquePtr<OptionalUInt64>;
         pub fn has_value(optional: &UniquePtr<OptionalUInt64>) -> bool;
         pub fn get_value(optional: &UniquePtr<OptionalUInt64>) -> u64;
+        pub fn seq(self: &ApplyView) -> u32;
         pub fn adjustOwnerCount(view: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>, amount: i32, j: &Journal);
 
         pub fn fees<'a, 'b>(self: &'a ApplyView) -> &'b Fees;
@@ -281,6 +292,7 @@ pub mod rippled {
         // FIXME: Probably a memory leak
         pub unsafe fn new_st_blob(sfield: &SField, data: *const u8, size: usize) -> &STBlob;
     }
+
 }
 
 #[repr(transparent)]

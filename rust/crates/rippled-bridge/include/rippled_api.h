@@ -52,6 +52,12 @@ void setAccountID(
                 ripple::AccountID const& v
 );
 
+void setFieldAmountXRP(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::XRPAmount const& xrpAmount
+);
+
 void setPluginType(
         std::shared_ptr<ripple::SLE>const & sle,
         ripple::SField const& field,
@@ -115,6 +121,10 @@ constexpr ripple::SField const& sfRegularKey() {
 
 constexpr ripple::SField const& sfAccount() {
     return ripple::sfAccount;
+}
+
+constexpr ripple::SField const& sfSequence() {
+    return ripple::sfSequence;
 }
 
 constexpr ripple::SField const& sfOwnerCount() {
@@ -244,6 +254,22 @@ adjustOwnerCount(
     beast::Journal const& j);
 
 ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t const* data, std::size_t size);
-/*using TypedSTPluginType = ripple::TypedField<ripple::STPluginType>;
-ripple::SField const & makeTypedField(int tid, int fv, const char* fn);*/
+
+bool is_zero(ripple::STAmount const& amount) {
+    return amount == beast::zero;
+}
+
+using ConstSLE = ripple::SLE const;
+std::shared_ptr<ConstSLE> read(ripple::ReadView const& readView, ripple::Keylet const& k) {
+    return readView.read(k);
+}
+
+bool st_amount_eq(ripple::STAmount const& amount1, ripple::STAmount const& amount2) {
+    return amount1 == amount2;
+}
+
+bool st_amount_gt(ripple::STAmount const& amount1, ripple::STAmount const& amount2) {
+    return amount1 > amount2;
+}
+
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

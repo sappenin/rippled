@@ -332,6 +332,8 @@ STAmount::cft() const noexcept
 inline bool
 STAmount::negative() const noexcept
 {
+    // TODO: This should always return false if mType == CFT.
+    //  We'd need to replace all accessors of mIsNegative with calls to negative()
     return mIsNegative;
 }
 
