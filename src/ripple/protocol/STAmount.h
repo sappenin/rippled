@@ -47,11 +47,12 @@ public:
     using mantissa_type = std::uint64_t;
     using exponent_type = int;
     using rep = std::pair<mantissa_type, exponent_type>;
-
+    enum Type {Native, CFT, IOU};
 private:
     Issue mIssue;
     mantissa_type mValue;
     exponent_type mOffset;
+    Type mType;
     bool mIsNegative;
 
 public:
@@ -86,7 +87,7 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-//        bool native,
+        Type type,
         bool negative,
         unchecked);
 
@@ -94,7 +95,7 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-//        bool native,
+        Type type,
         bool negative,
         unchecked);
 
@@ -104,29 +105,21 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-//        bool native,
-        bool negative
-        );
+        Type type,
+        bool negative);
 
-    STAmount(SField const& name, std::int64_t mantissa);
+    STAmount(SField const& name, Type type, std::int64_t mantissa);
 
     STAmount(
         SField const& name,
         std::uint64_t mantissa = 0,
         bool negative = false);
 
-//    STAmount(
-//        SField const& name,
-//        Issue const& issue,
-//        std::uint64_t mantissa = 0,
-//        int exponent = 0,
-//        bool negative = false
-//        );
-
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 
     STAmount(
         Issue const& issue,
+        Type type,
         std::uint64_t mantissa = 0,
         int exponent = 0,
         bool negative = false);
@@ -134,14 +127,16 @@ public:
     // VFALCO Is this needed when we have the previous signature?
     STAmount(
         Issue const& issue,
+        Type type,
         std::uint32_t mantissa,
         int exponent = 0,
         bool negative = false);
 
-    STAmount(Issue const& issue, std::int64_t mantissa, int exponent = 0);
+    STAmount(Issue const& issue, Type type, std::int64_t mantissa, int exponent = 0);
 
-    STAmount(Issue const& issue, int mantissa, int exponent = 0);
+    STAmount(Issue const& issue, Type type, int mantissa, int exponent = 0);
 
+    // Legacy support for new-style amounts
     STAmount(XRPAmount const& amount);
     operator Number() const;
 
@@ -154,9 +149,11 @@ public:
     int
     exponent() const noexcept;
 
-    // TODO: Always True
-//    bool
-//    native() const noexcept;
+    bool
+    native() const noexcept;
+
+    bool
+    cft() const noexcept;
 
     bool
     negative() const noexcept;
@@ -166,6 +163,9 @@ public:
 
     Issue const&
     issue() const;
+
+    Type const&
+    type() const;
 
     // These three are deprecated
     Currency const&
@@ -222,14 +222,14 @@ public:
     clear(STAmount const& saTmpl);
 
     void
-    clear(Issue const& issue);
+    clear(Type type, Issue const& issue);
 
     void
     setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount and update mIsNative. */
     void
-    setIssue(Issue const& issue);
+    setIssue(Type type, Issue const& issue);
 
     //--------------------------------------------------------------------------
     //
@@ -287,11 +287,9 @@ private:
 //------------------------------------------------------------------------------
 
 // VFALCO TODO The parameter type should be Quality not uint64_t
-STAmount
-amountFromQuality(std::uint64_t rate);
 
 STAmount
-amountFromString(Issue const& issue, std::string const& amount);
+amountFromString(Issue const& issue, STAmount::Type type, std::string const& amount);
 
 STAmount
 amountFromJson(SField const& name, Json::Value const& v);
@@ -319,11 +317,17 @@ STAmount::exponent() const noexcept
     return mOffset;
 }
 
-//inline bool
-//STAmount::native() const noexcept
-//{
-//    return mIsNative;
-//}
+inline bool
+STAmount::native() const noexcept
+{
+    return mType == Type::Native;
+}
+
+inline bool
+STAmount::cft() const noexcept
+{
+    return mType == Type::CFT;
+}
 
 inline bool
 STAmount::negative() const noexcept
@@ -341,6 +345,12 @@ inline Issue const&
 STAmount::issue() const
 {
     return mIssue;
+}
+
+inline STAmount::Type const&
+STAmount::type() const
+{
+    return mType;
 }
 
 inline Currency const&
@@ -364,7 +374,7 @@ STAmount::signum() const noexcept
 inline STAmount
 STAmount::zeroed() const
 {
-    return STAmount(mIssue);
+    return STAmount(mIssue, mType);
 }
 
 inline STAmount::operator bool() const noexcept
@@ -374,7 +384,9 @@ inline STAmount::operator bool() const noexcept
 
 inline STAmount::operator Number() const
 {
-    return xrp();
+//    if (mIsNative)
+        return xrp();
+//    return iou();
 }
 
 inline STAmount&
@@ -403,7 +415,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = 0;
+    mOffset = native() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }
@@ -412,13 +424,13 @@ STAmount::clear()
 inline void
 STAmount::clear(STAmount const& saTmpl)
 {
-    clear(saTmpl.mIssue);
+    clear(saTmpl.mType, saTmpl.mIssue);
 }
 
 inline void
-STAmount::clear(Issue const& issue)
+STAmount::clear(Type type, Issue const& issue)
 {
-    setIssue(issue);
+    setIssue(type, issue);
     clear();
 }
 
@@ -426,7 +438,7 @@ inline void
 STAmount::setIssuer(AccountID const& uIssuer)
 {
     mIssue.account = uIssuer;
-    setIssue(mIssue);
+    setIssue(mType, mIssue);
 }
 
 inline STAmount const&
@@ -438,7 +450,7 @@ STAmount::value() const noexcept
 inline bool
 isLegalNet(STAmount const& value)
 {
-    return (value.mantissa() <= STAmount::cMaxNativeN);
+    return !value.native() || (value.mantissa() <= STAmount::cMaxNativeN);
 }
 
 //------------------------------------------------------------------------------
@@ -497,7 +509,7 @@ STAmount
 multiply(STAmount const& v1, STAmount const& v2, Issue const& issue);
 
 // multiply, or divide rounding result in specified direction
-STAmount
+/*STAmount
 mulRound(
     STAmount const& v1,
     STAmount const& v2,
@@ -509,7 +521,7 @@ divRound(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
-    bool roundUp);
+    bool roundUp);*/
 
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
@@ -519,11 +531,11 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 
 //------------------------------------------------------------------------------
 
-//inline bool
-//isXRP(STAmount const& amount)
-//{
-//    return isXRP(amount.issue().currency);
-//}
+inline bool
+isXRP(STAmount const& amount)
+{
+    return isXRP(amount.issue().currency);
+}
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only

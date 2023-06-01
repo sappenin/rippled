@@ -170,6 +170,8 @@ JSS(currency_b);             // out: BookChanges
 JSS(currentShard);           // out: NodeToShardStatus
 JSS(currentShardIndex);      // out: NodeToShardStatus
 JSS(currency);               // in: paths/PathRequest, STAmount
+JSS(issuer);               // in: paths/PathRequest, STAmount
+JSS(isCft);               // in: paths/PathRequest, STAmount
                              // out: STPathSet, STAmount,
                              //      AccountLines
 JSS(current);                // out: OwnerInfo
