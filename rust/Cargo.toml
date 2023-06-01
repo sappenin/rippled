@@ -5,7 +5,8 @@ members = [
     "crates/plugin-transactor",
     "crates/dummy_tx",
     "crates/cft-light/cftoken_issuance_create",
-    "crates/cft-light/payment"
+    "crates/cft-light/payment",
+    "crates/cft-light/cftoken_create"
 ]
 
 [workspace.dependencies]

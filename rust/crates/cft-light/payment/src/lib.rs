@@ -69,51 +69,57 @@ impl Transactor for Payment {
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
-        let dest_account_id = ctx.tx.get_account_id(&SField::sf_destination());
-        let amount = ctx.tx.get_amount(&SField::sf_amount());
+        // if ctx.tx.get_amount(&SField::sf_amount()).is_cft() {
+        if true {
+            //
+            tesSUCCESS.into()
+        } else {
+            let dest_account_id = ctx.tx.get_account_id(&SField::sf_destination());
+            let amount = ctx.tx.get_amount(&SField::sf_amount());
 
-        let dest_keylet = Keylet::account(&dest_account_id);
-        let sle_dst = match ctx.view.peek(&dest_keylet) {
-            None => {
-                let seq_number = ctx.view.seq();
-                let mut sle_dst = SLE::from(&dest_keylet);
-                sle_dst.set_field_account(&SField::sf_account(), &dest_account_id);
-                sle_dst.set_field_u32(&SField::sf_sequence(), seq_number);
+            let dest_keylet = Keylet::account(&dest_account_id);
+            let sle_dst = match ctx.view.peek(&dest_keylet) {
+                None => {
+                    let seq_number = ctx.view.seq();
+                    let mut sle_dst = SLE::from(&dest_keylet);
+                    sle_dst.set_field_account(&SField::sf_account(), &dest_account_id);
+                    sle_dst.set_field_u32(&SField::sf_sequence(), seq_number);
 
-                ctx.view.insert(&sle_dst);
-                sle_dst
-            }
-            Some(sle_dst) => {
-                ctx.view.update(&sle_dst);
-                sle_dst
-            }
-        };
-
-        let sle_src = ctx.view.peek(
-            &Keylet::account(&ctx.tx.get_account_id(&SField::sf_account()))
-        );
-
-        match sle_src {
-            None => tefINTERNAL.into(),
-            Some(sle_src) => {
-                let owner_count = sle_src.get_uint32(&SField::sf_owner_count());
-                let reserve = ctx.view.fees().account_reserve(owner_count as usize);
-
-                // mPriorBalance is the balance on the sending account BEFORE the
-                // fees were charged. We want to make sure we have enough reserve
-                // to send. Allow final spend to use reserve for fee.
-                let mmm = max(reserve, ctx.tx.get_amount(&SField::sf_fee()).xrp());
-                if m_prior_balance < amount.xrp() + mmm {
-                    return tecUNFUNDED_PAYMENT.into();
+                    ctx.view.insert(&sle_dst);
+                    sle_dst
                 }
+                Some(sle_dst) => {
+                    ctx.view.update(&sle_dst);
+                    sle_dst
+                }
+            };
 
-                sle_src.set_field_amount_xrp(&SField::sf_balance(), m_source_balance - amount.xrp());
-                sle_dst.set_field_amount_xrp(
-                    &SField::sf_balance(),
-                    sle_dst.get_amount(&SField::sf_balance()).xrp() + amount.xrp()
-                );
+            let sle_src = ctx.view.peek(
+                &Keylet::account(&ctx.tx.get_account_id(&SField::sf_account()))
+            );
 
-                tesSUCCESS.into()
+            match sle_src {
+                None => tefINTERNAL.into(),
+                Some(sle_src) => {
+                    let owner_count = sle_src.get_uint32(&SField::sf_owner_count());
+                    let reserve = ctx.view.fees().account_reserve(owner_count as usize);
+
+                    // mPriorBalance is the balance on the sending account BEFORE the
+                    // fees were charged. We want to make sure we have enough reserve
+                    // to send. Allow final spend to use reserve for fee.
+                    let mmm = max(reserve, ctx.tx.get_amount(&SField::sf_fee()).xrp());
+                    if m_prior_balance < amount.xrp() + mmm {
+                        return tecUNFUNDED_PAYMENT.into();
+                    }
+
+                    sle_src.set_field_amount_xrp(&SField::sf_balance(), m_source_balance - amount.xrp());
+                    sle_dst.set_field_amount_xrp(
+                        &SField::sf_balance(),
+                        sle_dst.get_amount(&SField::sf_balance()).xrp() + amount.xrp()
+                    );
+
+                    tesSUCCESS.into()
+                }
             }
         }
     }

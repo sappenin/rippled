@@ -71,6 +71,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cftoken_create"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "hex",
+ "libc",
+ "once_cell",
+ "plugin-transactor",
+ "rippled-bridge",
+ "xrpl-rust-sdk-core",
+]
+
+[[package]]
 name = "cftoken_issuance_create"
 version = "0.1.0"
 dependencies = [
