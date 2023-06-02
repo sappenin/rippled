@@ -19,7 +19,7 @@ use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
 use cftoken_core::cftoken::{CFToken};
 use cftoken_core::{cftoken_issuance, CFTokenFields};
-use cftoken_core::cftoken_utils::find_cftoken;
+use cftoken_core::cftoken_utils::find_token;
 
 struct CFTokenCreate;
 
@@ -68,7 +68,7 @@ impl Transactor for CFTokenCreate {
                 if ctx.view.read(&issuance_keylet).is_none() {
                     return temBAD_ISSUER.into();
                 }
-                match find_cftoken(&ctx.view, &source_account_id, &issuance_keylet.into()) {
+                match find_token(&ctx.view, &source_account_id, &issuance_keylet.into()) {
                     None => tesSUCCESS.into(),
                     Some(_) => temREDUNDANT.into()
                 }
