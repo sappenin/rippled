@@ -9,6 +9,7 @@ crate-type = ["dylib"]
 [dependencies]
 plugin-transactor = { path = "../../plugin-transactor" }
 rippled-bridge = { path = "../../rippled-bridge" }
+cftoken-core = { path = "../cftoken-core" }
 xrpl-rust-sdk-core = { workspace = true }
 cxx = "1.0.94"
 libc = "0.2.142"

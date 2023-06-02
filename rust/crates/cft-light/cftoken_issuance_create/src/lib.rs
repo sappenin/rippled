@@ -6,46 +6,16 @@ use cxx::{CxxString, CxxVector, let_cxx_string, SharedPtr, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
+use cftoken_core::cftoken_issuance;
+use cftoken_core::cftoken_issuance::CFTokenIssuance;
 use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::{SOElement, WriteToSle};
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
+use rippled_bridge::TECcodes::tecDUPLICATE;
 use rippled_bridge::TEScodes::tesSUCCESS;
 
-pub struct CFTokenIssuance<'a> {
-    transfer_fee: Option<u16>,
-    flags: u32,
-    maximum_amount: u64,
-    outstanding_amount: Option<u64>,
-    locked_amount: Option<u64>,
-    owner_node: Option<u64>,
-    cft_metadata: Option<&'a [u8]>,
-    issuer: AccountId,
-    asset_scale: u8,
-    asset_code: Hash160,
-}
-
-impl WriteToSle for CFTokenIssuance<'_> {
-    fn write_to_sle(&self, sle: &mut SLE) {
-        sle.set_field_u32(&SField::sf_flags(), self.flags); // sfFlags
-        sle.set_field_account(&SField::sf_issuer(), &self.issuer); // sfIssuer
-        sle.set_field_h160(&SField::get_plugin_field(17, 5), &self.asset_code); // sfAssetCode
-        sle.set_field_u8(&SField::get_plugin_field(16, 19), self.asset_scale); // sfAssetScale
-        sle.set_field_u64(&SField::get_plugin_field(3, 20), self.maximum_amount); // sfMaximumAmount
-
-        if let Some(tf) = self.transfer_fee {
-            sle.set_field_u16(&SField::sf_transfer_fee(), tf);
-        }
-
-        if let Some(meta) = self.cft_metadata {
-            sle.set_field_blob2(&SField::get_plugin_field(7, 22), meta);
-        }
-    }
-}
-
 struct CFTokenIssuanceCreate;
-
-const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
 impl Transactor for CFTokenIssuanceCreate {
     fn pre_flight(ctx: PreflightContext) -> NotTEC {
@@ -68,14 +38,15 @@ impl Transactor for CFTokenIssuanceCreate {
         // TODO: Anything else to check? I don't think we need to check if the directory is full
         //  because when we go to insert the issuance, dirInsert() will return null if the
         //  directory is full
-        let keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
-            .key(ctx.tx.get_account_id(&SField::sf_account()))
-            .key(ctx.tx.get_uint160(&SField::get_plugin_field(17, 5)))
-            .build();
+        let keylet = cftoken_issuance::keylet(
+            &ctx.tx.get_account_id(&SField::sf_account()),
+            &ctx.tx.get_uint160(&SField::get_plugin_field(17, 5))
+        );
+
         if ctx.view.exists(&keylet) {
-            return TECcodes::tecDUPLICATE.into();
+            return tecDUPLICATE.into();
         }
-        TEScodes::tesSUCCESS.into()
+        tesSUCCESS.into()
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
@@ -96,10 +67,10 @@ impl Transactor for CFTokenIssuanceCreate {
         }
 
         let asset_code = SField::get_plugin_field(17, 5);
-        let issuance_keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
-            .key(source_account_id)
-            .key(ctx.tx.get_uint160(&asset_code))
-            .build();
+        let issuance_keylet = cftoken_issuance::keylet(
+            &source_account_id,
+            &ctx.tx.get_uint160(&asset_code)
+        );
 
         let mut slep = SLE::from(&issuance_keylet);
 

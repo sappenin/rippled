@@ -18,6 +18,7 @@ use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temBAD_ISSUER, temINVALID_FLAG, te
 use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
 use cftoken_core::cftoken::{CFToken};
+use cftoken_core::cftoken_issuance;
 use cftoken_core::cftoken_utils::find_cftoken;
 use cftoken_core::ids::CFTokenID;
 
@@ -64,10 +65,10 @@ impl Transactor for CFTokenCreate {
         match ctx.view.read(&source_keylet) {
             None => terNO_ACCOUNT.into(),
             Some(_) => {
-                let issuance_keylet = Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
-                    .key(ctx.tx.get_account_id(&SField::sf_issuer()))
-                    .key(ctx.tx.get_uint160(&SField::get_plugin_field(17, 5)))
-                    .build();
+                let issuance_keylet = cftoken_issuance::keylet(
+                    &ctx.tx.get_account_id(&SField::sf_issuer()),
+                    &ctx.tx.get_uint160(&SField::get_plugin_field(17, 5))
+                );
                 if ctx.view.read(&issuance_keylet).is_none() {
                     return temBAD_ISSUER.into();
                 }
