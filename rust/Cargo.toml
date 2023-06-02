@@ -4,6 +4,7 @@ members = [
     "crates/rippled-bridge",
     "crates/plugin-transactor",
     "crates/dummy_tx",
+    "crates/cft-light/cftoken-core",
     "crates/cft-light/cftoken_issuance_create",
     "crates/cft-light/payment",
     "crates/cft-light/cftoken_create"
@@ -11,4 +12,4 @@ members = [
 
 [workspace.dependencies]
 xrpl-rust-sdk-core = { path = "../../xrpl-rust-sdk/xrpl-rust-sdk-core" }
-#xrpl-rust-sdk-core = {path = "../../../../../../github/xpring-eng/xrpl-rust-sdk/xrpl-rust-sdk-core"}
+#xrpl-rust-sdk-core = {path = "../../../../github/xpring-eng/xrpl-rust-sdk/xrpl-rust-sdk-core"}

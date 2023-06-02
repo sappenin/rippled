@@ -1,16 +1,11 @@
 [package]
-name = "cftoken_issuance_create"
+name = "cftoken-core"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["dylib"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 plugin-transactor = { path = "../../plugin-transactor" }
 rippled-bridge = { path = "../../rippled-bridge" }
 xrpl-rust-sdk-core = { workspace = true }
-cxx = "1.0.94"
-libc = "0.2.142"
-once_cell = "1.17.1"
-hex = "0.4.3"

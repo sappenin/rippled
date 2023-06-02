@@ -17,42 +17,11 @@ use rippled_bridge::TEFcodes::tefINTERNAL;
 use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temBAD_ISSUER, temINVALID_FLAG, temREDUNDANT};
 use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
-
-/// {
-///   account: AccountID,
-///   issuer: AccountID,
-///   AssetCode: UInt160,
-/// }
-
-pub struct CFToken<'a> {
-    inner: &'a STObject<'a>
-}
-
-impl CFToken<'_> {
-    pub fn issuance_id(&self) -> Hash256 {
-        self.inner.get_h256(&SField::get_plugin_field(5, 28))
-    }
-
-    pub fn amount(&self) -> u64 {
-        self.inner.get_uint64(&SField::get_plugin_field(3, 23))
-    }
-
-    pub fn locked_amount(&self) -> u64 {
-        self.inner.get_uint64(&SField::get_plugin_field(3, 22))
-    }
-
-    pub fn flags(&self) -> u32 {
-        self.inner.get_uint32(&SField::sf_flags())
-    }
-}
+use cftoken_core::cftoken::{CFToken};
+use cftoken_core::cftoken_utils::find_cftoken;
+use cftoken_core::ids::CFTokenID;
 
 struct CFTokenCreate;
-
-type CFTokenIssuanceID = Hash256;
-type CFTokenID = CFTokenIssuanceID;
-pub fn find_cftoken<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFToken<'a>> {
-    todo!()
-}
 
 // TODO: Move this into a shared crate called cft-core
 const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
@@ -115,9 +84,7 @@ impl Transactor for CFTokenCreate {
     }
 
     fn tx_format() -> Vec<SOElement> {
-        vec![
-
-        ]
+        vec![]
     }
 }
 
