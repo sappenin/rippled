@@ -1,9 +1,12 @@
-use xrpl_rust_sdk_core::core::types::{AccountId, Hash160};
+use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256};
 use plugin_transactor::{SField, SLE};
 use plugin_transactor::transactor::{LedgerObject};
 use rippled_bridge::Keylet;
+use crate::{CFTokenFields};
 
 const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
+
+pub type CFTokenIssuanceID = Hash256;
 
 pub struct CFTokenIssuance {
     sle: SLE,
@@ -33,17 +36,17 @@ impl CFTokenIssuance {
     }
 
     pub fn set_maximum_amount(mut self, maximum_amount: u64) -> Self {
-        self.sle.set_field_u64(&SField::get_plugin_field(3, 20), maximum_amount);
+        self.sle.set_field_u64(&SField::sf_maximum_amount(), maximum_amount);
         self
     }
 
     pub fn set_outstanding_amount(mut self, amount: u64) -> Self {
-        self.sle.set_field_u64(&SField::get_plugin_field(3, 21), amount);
+        self.sle.set_field_u64(&SField::sf_outstanding_amount(), amount);
         self
     }
 
     pub fn set_locked_amount(mut self, amount: u64) -> Self {
-        self.sle.set_field_u64(&SField::get_plugin_field(3, 22), amount);
+        self.sle.set_field_u64(&SField::sf_locked_amount(), amount);
         self
     }
 
@@ -53,7 +56,7 @@ impl CFTokenIssuance {
     }
 
     pub fn set_cft_metadata(mut self, metadata: &[u8]) -> Self {
-        self.sle.set_field_blob2(&SField::get_plugin_field(7, 22), metadata);
+        self.sle.set_field_blob2(&SField::sf_cft_metadata(), metadata);
         self
     }
 
@@ -63,12 +66,12 @@ impl CFTokenIssuance {
     }
 
     pub fn set_asset_scale(mut self, scale: u8) -> Self {
-        self.sle.set_field_u8(&SField::get_plugin_field(16, 19), scale);
+        self.sle.set_field_u8(&SField::sf_asset_scale(), scale);
         self
     }
 
     pub fn set_asset_code(mut self, code: &Hash160) -> Self {
-        self.sle.set_field_h160(&SField::get_plugin_field(17, 5), code);
+        self.sle.set_field_h160(&SField::sf_asset_code(), code);
         self
     }
 }

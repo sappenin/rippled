@@ -6,7 +6,7 @@ use cxx::{CxxString, CxxVector, let_cxx_string, SharedPtr, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
-use cftoken_core::cftoken_issuance;
+use cftoken_core::{cftoken_issuance, CFTokenFields};
 use cftoken_core::cftoken_issuance::{CFTokenIssuance};
 use plugin_transactor::{ApplyContext, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STTx, TF_UNIVERSAL_MASK, Transactor};
 use plugin_transactor::transactor::{SOElement};
@@ -40,7 +40,7 @@ impl Transactor for CFTokenIssuanceCreate {
         //  directory is full
         let keylet = cftoken_issuance::keylet(
             &ctx.tx.get_account_id(&SField::sf_account()),
-            &ctx.tx.get_uint160(&SField::get_plugin_field(17, 5))
+            &ctx.tx.get_uint160(&SField::sf_asset_code())
         );
 
         if ctx.view.exists(&keylet) {
@@ -66,23 +66,23 @@ impl Transactor for CFTokenIssuanceCreate {
             return TECcodes::tecINSUFFICIENT_RESERVE.into();
         }
 
-        let asset_code = SField::get_plugin_field(17, 5);
+        let asset_code = ctx.tx.get_uint160(&SField::sf_asset_code());
         let issuance_keylet = cftoken_issuance::keylet(
             &source_account_id,
-            &ctx.tx.get_uint160(&asset_code)
+            &asset_code
         );
 
         let mut issuance = CFTokenIssuance::new(&issuance_keylet)
             .set_issuer(&source_account_id)
-            .set_asset_code(&ctx.tx.get_uint160(&asset_code))
-            .set_asset_scale(ctx.tx.get_u8(&SField::get_plugin_field(16, 19)))
-            .set_maximum_amount(ctx.tx.get_u64(&SField::get_plugin_field(3, 20)))
+            .set_asset_code(&asset_code)
+            .set_asset_scale(ctx.tx.get_u8(&SField::sf_asset_scale()))
+            .set_maximum_amount(ctx.tx.get_u64(&SField::sf_maximum_amount()))
             .set_transfer_fee(ctx.tx.get_u16(&SField::sf_transfer_fee()))
             .set_flags(0);
 
-        if ctx.tx.is_field_present(&SField::get_plugin_field(7, 22)) { // sfCFTMetadata
+        if ctx.tx.is_field_present(&SField::sf_cft_metadata()) {
             issuance = issuance.set_cft_metadata(
-                ctx.tx.get_blob(&SField::get_plugin_field(7, 22)).as_ref()
+                ctx.tx.get_blob(&SField::sf_cft_metadata()).as_ref()
             );
         }
 
@@ -109,31 +109,27 @@ impl Transactor for CFTokenIssuanceCreate {
             //  or (2) typing AssetCode as a new SType called STCurrency and defining our own parseLeafType
             //  function in Rust. We should eventually do the latter.
             SOElement {
-                field_code: field_code(17, 5), // AssetCode
+                field_code: SField::sf_asset_code().code(),
                 style: SOEStyle::soeREQUIRED,
             },
             SOElement {
-                field_code: field_code(16, 19), // AssetScale
+                field_code: SField::sf_asset_scale().code(),
                 style: SOEStyle::soeREQUIRED,
             },
             SOElement {
-                field_code: field_code(1, 4), // TransferFee
+                field_code: SField::sf_transfer_fee().code(),
                 style: SOEStyle::soeOPTIONAL,
             },
             SOElement {
-                field_code: field_code(3, 20), // MaximumAmount
+                field_code: SField::sf_maximum_amount().code(),
                 style: SOEStyle::soeREQUIRED,
             },
             SOElement {
-                field_code: field_code(7, 22), // Metadata
+                field_code: SField::sf_cft_metadata().code(),
                 style: SOEStyle::soeOPTIONAL,
             },
         ]
     }
-}
-
-pub fn field_code(type_id: i32, field_id: i32) -> i32 {
-    (type_id << 16) | field_id
 }
 
 // TODO: Consider writing a macro that generates this for you given a T: Transactor

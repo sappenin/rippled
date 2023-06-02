@@ -18,14 +18,10 @@ use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temBAD_ISSUER, temINVALID_FLAG, te
 use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
 use cftoken_core::cftoken::{CFToken};
-use cftoken_core::cftoken_issuance;
+use cftoken_core::{cftoken_issuance, CFTokenFields};
 use cftoken_core::cftoken_utils::find_cftoken;
-use cftoken_core::ids::CFTokenID;
 
 struct CFTokenCreate;
-
-// TODO: Move this into a shared crate called cft-core
-const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
 impl Transactor for CFTokenCreate {
     fn pre_flight(ctx: PreflightContext) -> NotTEC {
@@ -67,7 +63,7 @@ impl Transactor for CFTokenCreate {
             Some(_) => {
                 let issuance_keylet = cftoken_issuance::keylet(
                     &ctx.tx.get_account_id(&SField::sf_issuer()),
-                    &ctx.tx.get_uint160(&SField::get_plugin_field(17, 5))
+                    &ctx.tx.get_uint160(&SField::sf_asset_code())
                 );
                 if ctx.view.read(&issuance_keylet).is_none() {
                     return temBAD_ISSUER.into();

@@ -12,6 +12,7 @@ use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, Hash256, 
 pub mod ter;
 pub mod flags;
 pub mod tx_consequences;
+pub mod type_ids;
 
 pub use ter::{TER, NotTEC, TEFcodes, TEMcodes, TELcodes, TECcodes, TEScodes, TERcodes};
 pub use flags::{LedgerSpecificFlags, ApplyFlags};

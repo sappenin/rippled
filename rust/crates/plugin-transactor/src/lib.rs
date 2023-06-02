@@ -227,9 +227,9 @@ impl SField<'_> {
         }
     }
 
-    pub fn get_plugin_field(type_id: i32, field_id: i32) -> Self {
+    pub fn get_plugin_field<T: Into<i32>>(type_id: T, field_id: i32) -> Self {
         SField {
-            instance: rippled_bridge::rippled::getSField(type_id, field_id)
+            instance: rippled_bridge::rippled::getSField(type_id.into(), field_id)
         }
     }
 
