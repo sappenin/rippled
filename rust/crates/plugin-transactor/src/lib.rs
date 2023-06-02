@@ -14,6 +14,7 @@ use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC,
 use rippled_bridge::rippled::{OptionalUInt64, setFlag};
 use rippled_bridge::TEScodes::tesSUCCESS;
 use rippled_bridge::tx_consequences::SeqProxy;
+use crate::transactor::LedgerObject;
 
 pub struct PreflightContext<'a> {
     instance: &'a rippled_bridge::rippled::PreflightContext,
@@ -551,6 +552,10 @@ impl ApplyView<'_> {
 
     pub fn insert(&mut self, sle: &SLE) {
         self.instance.as_mut().insert(&sle.instance);
+    }
+
+    pub fn insert_object<T: LedgerObject>(&mut self, object: &T) {
+        self.instance.as_mut().insert(&object.get_sle().instance)
     }
 
     pub fn update(&mut self, sle: &SLE) {

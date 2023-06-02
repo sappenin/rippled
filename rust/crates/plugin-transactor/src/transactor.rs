@@ -3,8 +3,8 @@ use xrpl_rust_sdk_core::core::types::XrpAmount;
 use rippled_bridge::{NotTEC, SOEStyle, TER};
 use crate::{ApplyContext, PreclaimContext, PreflightContext, ReadView, SLE, STTx, TxConsequences};
 
-pub trait WriteToSle {
-    fn write_to_sle(&self, sle: &mut SLE);
+pub trait LedgerObject {
+    fn get_sle(&self) -> &SLE;
 }
 
 pub trait Transactor {

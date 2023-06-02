@@ -8,7 +8,7 @@ use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, XrpAmount};
 use plugin_transactor::{ApplyContext, ConstSLE, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STAmount, STTx, TF_PAYMENT_MASK, TF_UNIVERSAL_MASK, Transactor, TxConsequences};
-use plugin_transactor::transactor::{MakeTxConsequences, SOElement, WriteToSle};
+use plugin_transactor::transactor::{MakeTxConsequences, SOElement};
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::LedgerSpecificFlags::lsfRequireDestTag;
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};

@@ -1,38 +1,75 @@
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160};
 use plugin_transactor::{SField, SLE};
-use plugin_transactor::transactor::WriteToSle;
+use plugin_transactor::transactor::{LedgerObject};
 use rippled_bridge::Keylet;
 
-pub const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
+const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
-pub struct CFTokenIssuance<'a> {
-    pub transfer_fee: Option<u16>,
-    pub flags: u32,
-    pub maximum_amount: u64,
-    pub outstanding_amount: Option<u64>,
-    pub locked_amount: Option<u64>,
-    pub owner_node: Option<u64>,
-    pub cft_metadata: Option<&'a [u8]>,
-    pub issuer: AccountId,
-    pub asset_scale: u8,
-    pub asset_code: Hash160,
+pub struct CFTokenIssuance {
+    sle: SLE,
 }
 
-impl WriteToSle for CFTokenIssuance<'_> {
-    fn write_to_sle(&self, sle: &mut SLE) {
-        sle.set_field_u32(&SField::sf_flags(), self.flags); // sfFlags
-        sle.set_field_account(&SField::sf_issuer(), &self.issuer); // sfIssuer
-        sle.set_field_h160(&SField::get_plugin_field(17, 5), &self.asset_code); // sfAssetCode
-        sle.set_field_u8(&SField::get_plugin_field(16, 19), self.asset_scale); // sfAssetScale
-        sle.set_field_u64(&SField::get_plugin_field(3, 20), self.maximum_amount); // sfMaximumAmount
+impl LedgerObject for CFTokenIssuance {
+    fn get_sle(&self) -> &SLE {
+        &self.sle
+    }
+}
 
-        if let Some(tf) = self.transfer_fee {
-            sle.set_field_u16(&SField::sf_transfer_fee(), tf);
-        }
+impl CFTokenIssuance {
+    pub fn new(keylet: &Keylet) -> CFTokenIssuance {
+        CFTokenIssuance { sle: SLE::from(keylet) }
+    }
 
-        if let Some(meta) = self.cft_metadata {
-            sle.set_field_blob2(&SField::get_plugin_field(7, 22), meta);
+    pub fn set_transfer_fee(mut self, fee: u16) -> Self {
+        if fee != 0 {
+            self.sle.set_field_u16(&SField::sf_transfer_fee(), fee);
         }
+        self
+    }
+
+    pub fn set_flags(mut self, flags: u32) -> Self {
+        self.sle.set_field_u32(&SField::sf_flags(), flags);
+        self
+    }
+
+    pub fn set_maximum_amount(mut self, maximum_amount: u64) -> Self {
+        self.sle.set_field_u64(&SField::get_plugin_field(3, 20), maximum_amount);
+        self
+    }
+
+    pub fn set_outstanding_amount(mut self, amount: u64) -> Self {
+        self.sle.set_field_u64(&SField::get_plugin_field(3, 21), amount);
+        self
+    }
+
+    pub fn set_locked_amount(mut self, amount: u64) -> Self {
+        self.sle.set_field_u64(&SField::get_plugin_field(3, 22), amount);
+        self
+    }
+
+    pub fn set_owner_node(mut self, owner_node: u64) -> Self {
+        self.sle.set_field_u64(&SField::sf_owner_node(), owner_node);
+        self
+    }
+
+    pub fn set_cft_metadata(mut self, metadata: &[u8]) -> Self {
+        self.sle.set_field_blob2(&SField::get_plugin_field(7, 22), metadata);
+        self
+    }
+
+    pub fn set_issuer(mut self, issuer: &AccountId) -> Self {
+        self.sle.set_field_account(&SField::sf_issuer(), issuer);
+        self
+    }
+
+    pub fn set_asset_scale(mut self, scale: u8) -> Self {
+        self.sle.set_field_u8(&SField::get_plugin_field(16, 19), scale);
+        self
+    }
+
+    pub fn set_asset_code(mut self, code: &Hash160) -> Self {
+        self.sle.set_field_h160(&SField::get_plugin_field(17, 5), code);
+        self
     }
 }
 
