@@ -101,7 +101,7 @@ impl Transactor for Payment {
             match sle_src {
                 None => tefINTERNAL.into(),
                 Some(sle_src) => {
-                    let owner_count = sle_src.get_uint32(&SField::sf_owner_count());
+                    let owner_count = sle_src.get_field_uint32(&SField::sf_owner_count());
                     let reserve = ctx.view.fees().account_reserve(owner_count as usize);
 
                     // mPriorBalance is the balance on the sending account BEFORE the
@@ -115,7 +115,7 @@ impl Transactor for Payment {
                     sle_src.set_field_amount_xrp(&SField::sf_balance(), m_source_balance - amount.xrp());
                     sle_dst.set_field_amount_xrp(
                         &SField::sf_balance(),
-                        sle_dst.get_amount(&SField::sf_balance()).xrp() + amount.xrp()
+                        sle_dst.get_field_amount(&SField::sf_balance()).xrp() + amount.xrp()
                     );
 
                     tesSUCCESS.into()

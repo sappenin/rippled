@@ -4,17 +4,17 @@ pub mod transactor;
 
 use core::slice;
 use std::cmp::Ordering;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use cxx::{CxxVector, SharedPtr, UniquePtr};
 pub use transactor::Transactor;
 
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
-use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC, UInt160, XRPAmount};
+use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC, UInt160, UInt256, XRPAmount};
 use rippled_bridge::rippled::{OptionalUInt64, setFlag};
 use rippled_bridge::TEScodes::tesSUCCESS;
 use rippled_bridge::tx_consequences::SeqProxy;
-use crate::transactor::LedgerObject;
+use crate::transactor::{AsSTObject, LedgerObject};
 
 pub struct PreflightContext<'a> {
     instance: &'a rippled_bridge::rippled::PreflightContext,
@@ -408,20 +408,25 @@ impl SLE {
         self.as_st_object().deref().getAccountID(field.instance).into()
     }
 
-    pub fn get_uint32(&self, field: &SField) -> u32 {
+    pub fn get_field_uint32(&self, field: &SField) -> u32 {
         self.as_st_object().deref().getFieldU32(field.instance)
     }
 
-    pub fn get_uint64(&self, field: &SField) -> u64 {
+    pub fn get_field_uint64(&self, field: &SField) -> u64 {
         self.as_st_object().deref().getFieldU64(field.instance)
     }
 
-    pub fn get_h256(&self, field: &SField) -> Hash256 {
+    pub fn get_field_h256(&self, field: &SField) -> Hash256 {
         self.as_st_object().deref().getFieldH256(field.instance).into()
     }
 
-    pub fn get_amount(&self, field: &SField) -> STAmount {
+    pub fn get_field_amount(&self, field: &SField) -> STAmount {
         STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
+    }
+
+    pub fn get_field_array(&self, field: &SField) -> STArray {
+        // STArray::new(self.as_st_object().deref().getFieldArray(field.instance))
+        todo!()
     }
 
     pub fn make_field_absent(&self, field: &SField) {
@@ -524,6 +529,24 @@ impl STObject<'_> {
     }
 }
 
+pub struct STArray {
+    instance: UniquePtr<rippled_bridge::rippled::STArray>,
+}
+
+impl STArray {
+    pub fn new_empty() -> STArray {
+        STArray { instance: rippled_bridge::rippled::new_st_array() }
+    }
+
+    pub fn new(instance: UniquePtr<rippled_bridge::rippled::STArray>) -> Self {
+        Self { instance }
+    }
+
+    pub fn push_back<'a, T: AsRef<STObject<'a>>>(&mut self, elem: &T) {
+        self.instance.pin_mut().push_back(elem.as_ref().instance)
+    }
+}
+
 pub struct ApplyView<'a> {
     instance: Pin<&'a mut rippled_bridge::rippled::ApplyView>,
     fees: Fees<'a>,
@@ -550,6 +573,11 @@ impl ApplyView<'_> {
         }
     }
 
+    pub fn peek_typed<T: LedgerObject>(&mut self, keylet: &Keylet) -> Option<T> {
+        self.peek(keylet)
+            .map(|sle| T::from(sle))
+    }
+
     pub fn insert(&mut self, sle: &SLE) {
         self.instance.as_mut().insert(&sle.instance);
     }
@@ -562,10 +590,12 @@ impl ApplyView<'_> {
         self.instance.as_mut().update(&sle.instance);
     }
 
+    pub fn update_object<T: LedgerObject>(&mut self, object: &T) {
+        self.instance.as_mut().update(&object.get_sle().instance);
+    }
+
     pub fn dir_insert(&mut self, directory: &Keylet, key: &Keylet, account_id: &AccountId) -> Option<u64> {
-        println!("About to dirInsert");
         let result: UniquePtr<OptionalUInt64> = rippled_bridge::rippled::dir_insert(self.instance.as_mut(), directory, key, &account_id.into());
-        println!("Done dirInsert");
         if rippled_bridge::rippled::has_value(&result) {
             Some(rippled_bridge::rippled::get_value(&result))
         } else {
@@ -584,6 +614,16 @@ impl ApplyView<'_> {
     pub fn seq(&self) -> u32 {
         self.instance.seq()
     }
+
+    pub fn succ(&mut self, key: &Keylet, last: &Keylet) -> Option<UInt256> {
+        let result = rippled_bridge::rippled::succ(self.instance.as_mut(), key, last);
+        if rippled_bridge::rippled::opt_uint256_has_value(&result) {
+            Some(rippled_bridge::rippled::opt_uint256_get_value(&result))
+        } else {
+            None
+        }
+    }
+
     pub fn adjust_owner_count(&mut self, sle: &SLE, amount: i32, j: &Journal) {
         rippled_bridge::rippled::adjustOwnerCount(self.instance.as_mut(), &sle.instance, amount, j.instance);
     }

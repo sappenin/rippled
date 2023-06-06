@@ -346,6 +346,12 @@ impl From<TECcodes> for TER {
     }
 }
 
+impl <T: Into<i32>> From<T> for TER {
+    fn from(value: T) -> Self {
+        TER::new(value.into())
+    }
+}
+
 ///////////////////
 impl PartialEq<TEScodes> for TER {
     fn eq(&self, other: &TEScodes) -> bool {

@@ -246,6 +246,12 @@ dir_insert(ripple::ApplyView& view, ripple::Keylet const& directory, ripple::Key
 bool has_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional);
 std::uint64_t get_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional);
 
+bool opt_uint256_has_value(const std::unique_ptr<std::optional<ripple::uint256>> & optional);
+ripple::uint256 opt_uint256_get_value(const std::unique_ptr<std::optional<ripple::uint256>> & optional);
+
+using OptionalUint256 = std::optional<ripple::uint256>;
+std::unique_ptr<OptionalUint256> succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last);
+
 void
 adjustOwnerCount(
     ripple::ApplyView& view,
@@ -272,4 +278,20 @@ bool st_amount_gt(ripple::STAmount const& amount1, ripple::STAmount const& amoun
     return amount1 > amount2;
 }
 
+std::unique_ptr<ripple::STArray> new_st_array() {
+    return std::make_unique<ripple::STArray>();
+}
+
+/*using STArrayIter = ripple::STArray::iterator;
+
+std::unique_ptr<STArrayIter> find_if_not(
+    STArrayIter const& first,
+    STArrayIter const& last,
+    rust::Fn<bool(ripple::STObject const&)> pred
+    );
+
+std::unique_ptr<STArrayIter> begin(ripple::STArray const & array);
+std::unique_ptr<STArrayIter> end(ripple::STArray const & array);*/
+
+//std::unique_ptr<ripple::STArray> to_st_array(rust::Vec<ripple::STObject const&> vec);
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

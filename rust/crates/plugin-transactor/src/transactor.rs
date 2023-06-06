@@ -1,10 +1,14 @@
 use std::pin::Pin;
 use xrpl_rust_sdk_core::core::types::XrpAmount;
 use rippled_bridge::{NotTEC, SOEStyle, TER};
-use crate::{ApplyContext, PreclaimContext, PreflightContext, ReadView, SLE, STTx, TxConsequences};
+use crate::{ApplyContext, PreclaimContext, PreflightContext, ReadView, SLE, STObject, STTx, TxConsequences};
 
-pub trait LedgerObject {
+pub trait LedgerObject: From<SLE> {
     fn get_sle(&self) -> &SLE;
+}
+
+pub trait AsSTObject {
+    fn as_st_object(&self) -> &STObject;
 }
 
 pub trait Transactor {

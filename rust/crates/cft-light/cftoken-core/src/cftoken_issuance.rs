@@ -4,12 +4,18 @@ use plugin_transactor::transactor::{LedgerObject};
 use rippled_bridge::Keylet;
 use crate::{CFTokenFields};
 
-const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
+pub const CFT_ISSUANCE_TYPE: u16 = 0x007Eu16;
 
 pub type CFTokenIssuanceID = Hash256;
 
 pub struct CFTokenIssuance {
     sle: SLE,
+}
+
+impl From<SLE> for CFTokenIssuance {
+    fn from(value: SLE) -> Self {
+        Self { sle: value }
+    }
 }
 
 impl LedgerObject for CFTokenIssuance {

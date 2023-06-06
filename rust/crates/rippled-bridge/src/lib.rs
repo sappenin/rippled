@@ -76,6 +76,7 @@ pub mod rippled {
         type Transactor;
         pub type SField;
         pub type STObject;
+        pub type STArray;
         type Keylet = super::Keylet;
         type LedgerEntryType = super::LedgerEntryType;
         pub type SLE;
@@ -132,7 +133,15 @@ pub mod rippled {
         pub type STypeFromSFieldFnPtr = super::STypeFromSFieldFnPtr;
         pub type OptionalSTVar;
         pub type OptionalUInt64;
+        pub type OptionalUint256;
         pub type ConstSLE;
+        // pub type STArrayIter;
+
+        // pub unsafe fn find_if_not(first: &STArrayIter, last: &STArrayIter, pred: fn(obj: &STObject) -> bool) -> UniquePtr<STArrayIter>;
+        // pub fn begin(array: &STArray) -> UniquePtr<STArrayIter>;
+        // pub fn end(array: &STArray) -> UniquePtr<STArrayIter>;
+
+        // pub fn to_st_array(cftokens: Vec<&STObject>) -> UniquePtr<STArray>;
 
         pub fn base64_decode_ptr(s: &CxxString) -> UniquePtr<CxxString>;
 
@@ -171,6 +180,7 @@ pub mod rippled {
         pub fn getFieldU64(self: &STObject, field: &SField) -> u64;
         pub fn getFieldBlob(self: &STObject, field: &SField) -> &'static STBlob;
         pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
+        pub fn getFieldArray(self: &STObject, field: &SField) -> &'static STArray;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
 
         pub fn getSeqProxy(self: &STTx) -> SeqProxy;
@@ -240,8 +250,12 @@ pub mod rippled {
         pub fn dir_insert(apply_view: Pin<&mut ApplyView>, directory: &Keylet, key: &Keylet, account_id: &AccountID) -> UniquePtr<OptionalUInt64>;
         pub fn has_value(optional: &UniquePtr<OptionalUInt64>) -> bool;
         pub fn get_value(optional: &UniquePtr<OptionalUInt64>) -> u64;
+        pub fn opt_uint256_has_value(optional: &UniquePtr<OptionalUint256>) -> bool;
+        pub fn opt_uint256_get_value(optional: &UniquePtr<OptionalUint256>) -> uint256;
         pub fn seq(self: &ApplyView) -> u32;
+        pub fn succ(apply_vew: Pin<&mut ApplyView>, key: &Keylet, last: &Keylet) -> UniquePtr<OptionalUint256>;
         pub fn adjustOwnerCount(view: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>, amount: i32, j: &Journal);
+        pub fn next(self: &uint256) -> uint256;
 
         pub fn fees<'a, 'b>(self: &'a ApplyView) -> &'b Fees;
         pub fn flags(self: &ApplyView) -> ApplyFlags;
@@ -295,6 +309,9 @@ pub mod rippled {
 
         // FIXME: Probably a memory leak
         pub unsafe fn new_st_blob(sfield: &SField, data: *const u8, size: usize) -> &STBlob;
+
+        pub fn new_st_array() -> UniquePtr<STArray>;
+        pub fn push_back(self: Pin<&mut STArray>, obj: &STObject);
     }
 
 }
@@ -589,17 +606,33 @@ impl KeyletBuilder {
     }
 
     pub fn build(self) -> Keylet {
-        Keylet::new(self.ledger_entry_type, self.namespace, self.key_bytes)
+        Keylet::from_bytes(self.ledger_entry_type, self.namespace, self.key_bytes)
     }
 }
 
 #[repr(C)]
+#[derive(Copy, Clone, PartialOrd, Ord, Eq, PartialEq)]
 pub struct Keylet {
-    key: [u8; 32],
+    pub key: UInt256,
     pub r#type: i16,
 }
 
 impl Keylet {
+
+    pub fn new<L: Into<i16>>(ledger_entry_type: L, key: UInt256) -> Self {
+        Keylet {
+            key,
+            r#type: ledger_entry_type.into()
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        Keylet {
+            key: self.key.next(),
+            r#type: self.r#type
+        }
+    }
+
     pub fn account(account_id: &AccountId) -> Self {
         rippled::account(&account_id.into())
     }
@@ -615,12 +648,12 @@ impl Keylet {
         KeyletBuilder::new(ledger_entry_type, namespace)
     }
 
-    fn new(ledger_entry_type: i16, namespace: u16, bytes: Vec<u8>) -> Self {
+    fn from_bytes(ledger_entry_type: i16, namespace: u16, bytes: Vec<u8>) -> Self {
         let mut sha512 = Sha512::new();
         sha512.update(namespace.to_be_bytes());
         sha512.update(&bytes);
         Keylet {
-            key: sha512.finalize()[..32].try_into().unwrap(),
+            key: UInt256::new(sha512.finalize()[..32].try_into().unwrap()),
             r#type: ledger_entry_type,
         }
     }
@@ -736,20 +769,27 @@ unsafe impl cxx::ExternType for UInt160 {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct UInt256 {
     data: [u8; 32]
 }
 
+impl UInt256 {
+    pub fn new(data: [u8; 32]) -> Self {
+        UInt256 { data }
+    }
+}
+
 impl From<UInt256> for Hash256 {
     fn from(value: UInt256) -> Self {
-        Hash256::try_from(value.data.as_ref()).unwrap()
+        Hash256::from(value.data)
     }
 }
 
 impl From<Hash256> for UInt256 {
     fn from(value: Hash256) -> Self {
         UInt256 {
-            data: value.as_ref().try_into().unwrap()
+            data: value.into()
         }
     }
 }

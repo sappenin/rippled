@@ -59,9 +59,9 @@ impl Transactor for CFTokenIssuanceCreate {
         let account_root = account_root.unwrap();
 
         // Make sure source account has enough funds available to cover the reserve.
-        let owner_count = account_root.get_uint32(&SField::sf_owner_count());
+        let owner_count = account_root.get_field_uint32(&SField::sf_owner_count());
         let reserve = ctx.view.fees().account_reserve(owner_count as usize + 1);
-        let balance = account_root.get_amount(&SField::sf_balance()).xrp();
+        let balance = account_root.get_field_amount(&SField::sf_balance()).xrp();
         if balance < reserve {
             return TECcodes::tecINSUFFICIENT_RESERVE.into();
         }

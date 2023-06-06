@@ -197,7 +197,6 @@ std::unique_ptr<std::optional<std::uint64_t>>
 dir_insert(ripple::ApplyView& view, ripple::Keylet const& directory, ripple::Keylet const& key, ripple::AccountID const& account) {
     std::optional<std::uint64_t> result =
         view.dirInsert(directory, key, ripple::describeOwnerDir(account));
-    std::cout << "Result: " << result.value() << std::endl;
     return std::make_unique<std::optional<std::uint64_t>>(result);
 }
 
@@ -207,6 +206,19 @@ bool has_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional) {
 
 std::uint64_t get_value(const std::unique_ptr<std::optional<std::uint64_t>> & optional) {
     return optional->value();
+}
+
+bool opt_uint256_has_value(const std::unique_ptr<std::optional<ripple::uint256>> & optional) {
+    return optional->has_value();
+}
+ripple::uint256 opt_uint256_get_value(const std::unique_ptr<std::optional<ripple::uint256>> & optional) {
+    return optional->value();
+}
+
+std::unique_ptr<OptionalUint256> succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last) {
+    std::optional<ripple::uint256> result =
+        applyView.succ(key.key, last.key);
+    return std::make_unique<std::optional<ripple::uint256>>(result);
 }
 
 void
@@ -224,3 +236,30 @@ adjustOwnerCount(
 ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t const* data, std::size_t size) {
     return *(new ripple::STBlob(field, data, size));
 }
+
+/*std::unique_ptr<STArrayIter> find_if_not(
+    STArrayIter const& first,
+    STArrayIter const& last,
+    rust::Fn<bool(ripple::STObject const&)> pred
+) {
+return std::make_unique<STArrayIter>(std::find_if_not(first, last, [pred](ripple::STObject const& obj) {
+    return pred(obj);
+    }));
+}
+
+std::unique_ptr<STArrayIter> begin(ripple::STArray const & array) {
+    return std::make_unique<STArrayIter>(array.begin());
+}
+std::unique_ptr<STArrayIter> end(ripple::STArray const & array) {
+    return std::make_unique<STArrayIter>(array.end());
+}*/
+
+/*std::unique_ptr<ripple::STArray> to_st_array(rust::Vec<ripple::STObject const&> vec) {
+    std::unique_ptr<ripple::STArray> arr = std::make_unique<ripple::STArray>();
+    for (auto obj: vec) {
+        arr->push_back(obj);
+    }
+
+    return arr;
+}*/
+
