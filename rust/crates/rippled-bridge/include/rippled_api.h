@@ -64,6 +64,12 @@ void setPluginType(
         ripple::STPluginType const& v
 );
 
+void setFieldArray(
+    std::shared_ptr<ripple::SLE>const& sle,
+    ripple::SField const& field,
+    std::unique_ptr<ripple::STArray> value
+    );
+
 void setFieldU8(
     std::shared_ptr<ripple::SLE>const & sle,
     ripple::SField const& field,
@@ -88,6 +94,12 @@ void setFieldH160(
     std::shared_ptr<ripple::SLE>const & sle,
     ripple::SField const& field,
     ripple::uint160 const& v
+);
+
+void setFieldH256(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::uint256 const& v
 );
 void setFieldBlob(
     std::shared_ptr<ripple::SLE>const & sle,
@@ -169,6 +181,14 @@ constexpr ripple::SField const& sfDestination() {
 
 constexpr ripple::SField const& sfDestinationTag() {
     return ripple::sfDestinationTag;
+}
+
+constexpr ripple::SField const& sfPreviousPageMin() {
+    return ripple::sfPreviousPageMin;
+}
+
+constexpr ripple::SField const& sfNextPageMin() {
+    return ripple::sfNextPageMin;
 }
 /*constexpr ripple::SField const& sfTicketSequence() {
     return ripple::sfTicketSequence;
@@ -282,16 +302,5 @@ std::unique_ptr<ripple::STArray> new_st_array() {
     return std::make_unique<ripple::STArray>();
 }
 
-/*using STArrayIter = ripple::STArray::iterator;
-
-std::unique_ptr<STArrayIter> find_if_not(
-    STArrayIter const& first,
-    STArrayIter const& last,
-    rust::Fn<bool(ripple::STObject const&)> pred
-    );
-
-std::unique_ptr<STArrayIter> begin(ripple::STArray const & array);
-std::unique_ptr<STArrayIter> end(ripple::STArray const & array);*/
-
-//std::unique_ptr<ripple::STArray> to_st_array(rust::Vec<ripple::STObject const&> vec);
+ripple::STObject const& get_from_st_array(ripple::STArray const& array, std::size_t index);
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

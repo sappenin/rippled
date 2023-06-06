@@ -75,6 +75,14 @@ void setPluginType(
     sle->setPluginType(field, v);
 }
 
+void setFieldArray(
+    std::shared_ptr<ripple::SLE>const& sle,
+    ripple::SField const& field,
+    std::unique_ptr<ripple::STArray> value
+) {
+    sle->setFieldArray(field, *value);
+}
+
 void setFieldU8(
     std::shared_ptr<ripple::SLE>const & sle,
     ripple::SField const& field,
@@ -113,6 +121,14 @@ void setFieldH160(
     ripple::uint160 const& v
 ) {
     sle->setFieldH160(field, v);
+}
+
+void setFieldH256(
+    std::shared_ptr<ripple::SLE>const & sle,
+    ripple::SField const& field,
+    ripple::uint256 const& v
+) {
+    sle->setFieldH256(field, v);
 }
 
 void setFieldBlob(
@@ -237,29 +253,7 @@ ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t cons
     return *(new ripple::STBlob(field, data, size));
 }
 
-/*std::unique_ptr<STArrayIter> find_if_not(
-    STArrayIter const& first,
-    STArrayIter const& last,
-    rust::Fn<bool(ripple::STObject const&)> pred
-) {
-return std::make_unique<STArrayIter>(std::find_if_not(first, last, [pred](ripple::STObject const& obj) {
-    return pred(obj);
-    }));
+ripple::STObject const& get_from_st_array(ripple::STArray const& array, std::size_t index) {
+    return array[index];
 }
-
-std::unique_ptr<STArrayIter> begin(ripple::STArray const & array) {
-    return std::make_unique<STArrayIter>(array.begin());
-}
-std::unique_ptr<STArrayIter> end(ripple::STArray const & array) {
-    return std::make_unique<STArrayIter>(array.end());
-}*/
-
-/*std::unique_ptr<ripple::STArray> to_st_array(rust::Vec<ripple::STObject const&> vec) {
-    std::unique_ptr<ripple::STArray> arr = std::make_unique<ripple::STArray>();
-    for (auto obj: vec) {
-        arr->push_back(obj);
-    }
-
-    return arr;
-}*/
 

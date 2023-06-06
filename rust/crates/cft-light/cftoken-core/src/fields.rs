@@ -10,6 +10,7 @@ pub trait CFTokenFields {
     fn sf_asset_scale() -> Self;
     fn sf_issuance_id() -> Self;
     fn sf_cft_amount() -> Self;
+    fn sf_cf_tokens() -> Self;
 }
 
 impl CFTokenFields for SField<'_> {
@@ -43,5 +44,9 @@ impl CFTokenFields for SField<'_> {
 
     fn sf_cft_amount() -> Self {
         SField::get_plugin_field(SerializedTypeID::STI_UINT64, 23)
+    }
+
+    fn sf_cf_tokens() -> Self {
+        SField::get_plugin_field(SerializedTypeID::STI_ARRAY, 21)
     }
 }

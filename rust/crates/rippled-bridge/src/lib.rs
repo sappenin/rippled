@@ -189,11 +189,13 @@ pub mod rippled {
         pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
         pub fn setFieldAmountXRP(sle: &SharedPtr<SLE>, field: &SField, v: &XRPAmount);
         pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
+        pub fn setFieldArray(sle: &SharedPtr<SLE>, field: &SField, v: UniquePtr<STArray>);
         pub fn setFieldU8(sle: &SharedPtr<SLE>, field: &SField, v: u8);
         pub fn setFieldU16(sle: &SharedPtr<SLE>, field: &SField, v: u16);
         pub fn setFieldU32(sle: &SharedPtr<SLE>, field: &SField, v: u32);
         pub fn setFieldU64(sle: &SharedPtr<SLE>, field: &SField, v: u64);
         pub fn setFieldH160(sle: &SharedPtr<SLE>, field: &SField, v: &uint160);
+        pub fn setFieldH256(sle: &SharedPtr<SLE>, field: &SField, v: &uint256);
         pub fn setFieldBlob(sle: &SharedPtr<SLE>, field: &SField, v: &STBlob);
 
 
@@ -220,6 +222,8 @@ pub mod rippled {
         pub fn sfInvoiceId() -> &'static SField;
         pub fn sfDestinationTag() -> &'static SField;
         pub fn sfDestination() -> &'static SField;
+        pub fn sfPreviousPageMin() -> &'static SField;
+        pub fn sfNextPageMin() -> &'static SField;
 
         // pub fn sfTicketSequence() -> &'static SField;
         pub fn getSField(type_id: i32, field_id: i32) -> &'static SField;
@@ -312,6 +316,8 @@ pub mod rippled {
 
         pub fn new_st_array() -> UniquePtr<STArray>;
         pub fn push_back(self: Pin<&mut STArray>, obj: &STObject);
+        pub fn size(self: &STArray) -> usize;
+        pub fn get_from_st_array(arr: &STArray, index: usize) -> &'static STObject;
     }
 
 }
@@ -777,6 +783,10 @@ pub struct UInt256 {
 impl UInt256 {
     pub fn new(data: [u8; 32]) -> Self {
         UInt256 { data }
+    }
+
+    pub fn data(&self) -> [u8; 32] {
+        self.data
     }
 }
 

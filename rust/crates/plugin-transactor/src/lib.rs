@@ -227,6 +227,18 @@ impl SField<'_> {
         }
     }
 
+    pub fn sf_previous_page_min() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfPreviousPageMin()
+        }
+    }
+
+    pub fn sf_next_page_min() -> Self {
+        SField {
+            instance: rippled_bridge::rippled::sfNextPageMin()
+        }
+    }
+
     pub fn get_plugin_field<T: Into<i32>>(type_id: T, field_id: i32) -> Self {
         SField {
             instance: rippled_bridge::rippled::getSField(type_id.into(), field_id)
@@ -424,9 +436,8 @@ impl SLE {
         STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
     }
 
-    pub fn get_field_array(&self, field: &SField) -> STArray {
-        // STArray::new(self.as_st_object().deref().getFieldArray(field.instance))
-        todo!()
+    pub fn get_field_array(&self, field: &SField) -> ConstSTArray {
+        ConstSTArray::new(self.as_st_object().deref().getFieldArray(field.instance))
     }
 
     pub fn make_field_absent(&self, field: &SField) {
@@ -461,6 +472,10 @@ impl SLE {
         rippled_bridge::rippled::setFieldH160(&self.instance, sfield.instance, &UInt160::from(value));
     }
 
+    pub fn set_field_h256(&mut self, sfield: &SField, value: &Hash256) {
+        rippled_bridge::rippled::setFieldH256(&self.instance, sfield.instance, &UInt256::from(value));
+    }
+
     pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {
         rippled_bridge::rippled::setAccountID(&self.instance, sfield.instance, &AccountID::from(value));
     }
@@ -479,6 +494,14 @@ impl SLE {
 
     pub fn set_plugin_type(&self, field: &SField, value: &STPluginType) {
         rippled_bridge::rippled::setPluginType(&self.instance, field.instance, value.instance);
+    }
+
+    pub fn set_field_array(&mut self, field: &SField, value: STArray) {
+        rippled_bridge::rippled::setFieldArray(&self.instance, field.instance, value.instance)
+    }
+
+    pub fn is_field_present(&self, field: &SField) -> bool {
+        self.as_st_object().isFieldPresent(field.instance)
     }
 
     fn as_st_object(&self) -> SharedPtr<rippled_bridge::rippled::STObject> {
@@ -526,6 +549,28 @@ impl STObject<'_> {
 
     pub fn is_flag(&self, flag: LedgerSpecificFlags) -> bool {
         self.instance.isFlag(flag.into())
+    }
+}
+
+pub struct ConstSTArray<'a> {
+    instance: &'a rippled_bridge::rippled::STArray
+}
+
+impl <'a>ConstSTArray<'a> {
+    pub fn new(instance: &'a rippled_bridge::rippled::STArray) -> ConstSTArray<'a> {
+        ConstSTArray { instance }
+    }
+
+    pub fn size(&self) -> usize {
+        self.instance.size()
+    }
+
+    pub fn get(&self, index: usize) -> Option<STObject<'static>> {
+        if index > self.size() - 1 {
+            None
+        } else {
+            Some(STObject::new(rippled_bridge::rippled::get_from_st_array(self.instance, index)))
+        }
     }
 }
 

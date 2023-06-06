@@ -51,7 +51,7 @@ fn get_or_create_page<'a>(
             Some(create_new_page(view, &last, &account_root, journal)),
         Some(mut page) => {
             let mut narr = page.get_tokens();
-            if narr.size() < MAX_TOKENS_PER_PAGE {
+            if narr.len() < MAX_TOKENS_PER_PAGE {
                 // The right page still has space: we're good.
                 Some(page)
             } else {
@@ -66,9 +66,7 @@ fn get_or_create_page<'a>(
                 // equivalent CFTs, the split may be lopsided in order to keep equivalent
                 // CFTs on the same page.
 
-                let middle_token = narr.get(((MAX_TOKENS_PER_PAGE / 2) - 1)).unwrap();
-
-                let cmp = middle_token.low_64();
+                let cmp = narr.get(((MAX_TOKENS_PER_PAGE / 2) - 1)).unwrap().low_64();
 
                 // TODO: Revisit this algorithm
                 let mut split_pos = narr.tokens[(MAX_TOKENS_PER_PAGE / 2)..].iter()
@@ -110,7 +108,7 @@ fn get_or_create_page<'a>(
                         // narr so carr stays empty.  The new CFT will be
                         // inserted in carr.  This keeps the CFTs that must be
                         // together all on their own page.
-                            Some(narr.size() - 1)
+                            Some(narr.len() - 1)
                     }
                 }
 
@@ -123,7 +121,7 @@ fn get_or_create_page<'a>(
                     // less than the low 64-bits of the enclosing page's index.  In order to
                     // accommodate that requirement we use an index one higher than the
                     // largest CFT in the page.
-                    let token_id_for_new_page = if narr.size() == MAX_TOKENS_PER_PAGE {
+                    let token_id_for_new_page = if narr.len() == MAX_TOKENS_PER_PAGE {
                         // This is ugly, but we don't have a ++ operator on Hash256, so we need to
                         // convert to a UInt256 and call the bridged next() function to add
                         // 1 to the ID, then convert back to CFTokenID.
@@ -203,9 +201,10 @@ pub fn insert_token<'a>(
     journal: &Journal
 ) -> TER {
     get_or_create_page(view, owner, &cft.token_id(), journal)
-        .map_or(tecNO_SUITABLE_CFTOKEN_PAGE.into(), |page| {
-            let tokens = page.get_tokens();
+        .map_or(tecNO_SUITABLE_CFTOKEN_PAGE.into(), |mut page| {
+            let mut tokens = page.get_tokens();
             tokens.insert_sorted(cft);
+            page.set_tokens(tokens);
             view.update_object(&page);
             tesSUCCESS.into()
         })
