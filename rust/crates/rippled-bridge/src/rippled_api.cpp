@@ -259,7 +259,22 @@ ripple::STBlob const& new_st_blob(ripple::SField const& field, std::uint8_t cons
     return *(new ripple::STBlob(field, data, size));
 }
 
-ripple::STObject const& get_from_st_array(ripple::STArray const& array, std::size_t index) {
+ripple::STObject const& get_from_const_st_array(ripple::STArray const& array, std::size_t index) {
     return array[index];
+}
+
+std::unique_ptr<ripple::STObject> get_from_st_array(ripple::STArray const& array, std::size_t index) {
+    return std::make_unique<ripple::STObject>(array[index]);
+}
+
+std::unique_ptr<ripple::STObject> create_inner_object(ripple::SField const& field) {
+    ripple::SOTemplate const* objectTemplate =
+        ripple::InnerObjectFormats::getInstance().findSOTemplateBySField(field);
+
+    return std::make_unique<ripple::STObject>(*objectTemplate, field);
+}
+
+std::unique_ptr<ripple::STArray> peekFieldArray(std::shared_ptr<ripple::STObject> obj, ripple::SField const& field) {
+    return std::make_unique<ripple::STArray>(obj->peekFieldArray(field));
 }
 

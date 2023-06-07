@@ -7,19 +7,19 @@ use cxx::{CxxString, CxxVector, let_cxx_string, SharedPtr, UniquePtr};
 use once_cell::sync::OnceCell;
 use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
-use plugin_transactor::{ApplyContext, ConstSLE, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STAmount, STObject, STTx, TF_PAYMENT_MASK, TF_UNIVERSAL_MASK, Transactor, TxConsequences};
+use plugin_transactor::{ApplyContext, ConstSLE, Feature, PreclaimContext, preflight1, preflight2, PreflightContext, ReadView, SField, SLE, STAmount, ConstSTObject, STTx, TF_PAYMENT_MASK, TF_UNIVERSAL_MASK, Transactor, TxConsequences};
 use plugin_transactor::transactor::{MakeTxConsequences, SOElement};
 use rippled_bridge::{CreateNewSFieldPtr, Keylet, LedgerNameSpace, NotTEC, ParseLeafTypeFnPtr, rippled, SOEStyle, STypeFromSFieldFnPtr, STypeFromSITFnPtr, TECcodes, TEFcodes, TEMcodes, TER, TEScodes, XRPAmount};
 use rippled_bridge::LedgerSpecificFlags::lsfRequireDestTag;
 use rippled_bridge::rippled::{account, asString, FakeSOElement, getVLBuffer, make_empty_stype, make_stvar, make_stype, OptionalSTVar, push_soelement, SerialIter, sfAccount, SFieldInfo, sfRegularKey, STBase, STPluginType, STypeExport, Value};
-use rippled_bridge::TECcodes::{tecDST_TAG_NEEDED, tecNO_DST_INSUF_XRP, tecUNFUNDED_PAYMENT};
+use rippled_bridge::TECcodes::{tecDST_TAG_NEEDED, tecINSUFFICIENT_RESERVE, tecNO_DST_INSUF_XRP, tecUNFUNDED_PAYMENT};
 use rippled_bridge::TEFcodes::tefINTERNAL;
 use rippled_bridge::TEMcodes::{temBAD_AMOUNT, temBAD_ISSUER, temINVALID_FLAG, temREDUNDANT};
 use rippled_bridge::TERcodes::terNO_ACCOUNT;
 use rippled_bridge::TEScodes::tesSUCCESS;
-use cftoken_core::cftoken::{CFToken};
+use cftoken_core::cftoken::{CFToken, ConstCFToken};
 use cftoken_core::{cftoken_issuance, CFTokenFields};
-use cftoken_core::cftoken_utils::find_token;
+use cftoken_core::cftoken_utils::{find_token, insert_token};
 
 struct CFTokenCreate;
 
@@ -77,12 +77,47 @@ impl Transactor for CFTokenCreate {
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
+        let source_account_id = ctx.tx.get_account_id(&SField::sf_account());
+        let account_keylet = Keylet::account(&source_account_id);
+        let owner_count_before = ctx.view.read(&account_keylet).unwrap().get_field_uint32(&SField::sf_owner_count());
 
+        let mut token = CFToken::new();
+        let issuance_keylet = cftoken_issuance::keylet(
+            &ctx.tx.get_account_id(&SField::sf_issuer()),
+            &ctx.tx.get_uint160(&SField::sf_asset_code())
+        );
+        token.set_issuance_id(issuance_keylet.key.into());
+        token.set_amount(0);
+
+        let insert_result = insert_token(&mut ctx.view, &source_account_id, token, &ctx.journal);
+        if insert_result != tesSUCCESS {
+            return insert_result;
+        }
+
+        let owner_count_after = ctx.view.read(&account_keylet).unwrap().get_field_uint32(&SField::sf_owner_count());
+        // Only check the reserve if the owner count actually changed.  This
+        // allows CFTs to be added to the page (and burn fees) without
+        // requiring the reserve to be met each time.  The reserve is
+        // only managed when a new CFT page is added.
+        if owner_count_after > owner_count_before {
+            if m_prior_balance < ctx.view.fees().account_reserve(owner_count_after) {
+                return tecINSUFFICIENT_RESERVE.into();
+            }
+        }
         tesSUCCESS.into()
     }
 
     fn tx_format() -> Vec<SOElement> {
-        vec![]
+        vec![
+            SOElement {
+                field_code: SField::sf_issuer().code(),
+                style: SOEStyle::soeREQUIRED,
+            },
+            SOElement {
+                field_code: SField::sf_asset_code().code(),
+                style: SOEStyle::soeREQUIRED,
+            },
+        ]
     }
 }
 

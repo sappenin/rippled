@@ -3,7 +3,7 @@ use xrpl_rust_sdk_core::core::types::AccountId;
 use plugin_transactor::{ApplyView, Journal, ReadView, SLE, STArray};
 use rippled_bridge::{Keylet, TER, UInt256};
 use rippled_bridge::TEScodes::tesSUCCESS;
-use crate::cftoken::{CFToken, CFTokenID};
+use crate::cftoken::{ConstCFToken, CFTokenID, CFToken};
 use crate::cftoken_issuance::CFTokenIssuanceID;
 use crate::cftoken_page::{CFTOKEN_PAGE_TYPE, CFTokenPage, CFTokens, keylet};
 use crate::const_cftoken_page::ConstCFTokenPage;
@@ -236,7 +236,7 @@ pub fn insert_token<'a>(
 
 // TODO: Maybe implement removeToken if we end up allowing CFToken deletion
 
-pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFToken<'a>> {
+pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFToken<'a>> {
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_read_view
     // will be None if this is the case.
     locate_page_in_read_view(view, owner, issuance_id)
@@ -247,7 +247,7 @@ pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a
         ).flatten()
 }
 
-pub fn find_token_and_page<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken<'a>, CFTokenPage)> {
+pub fn find_token_and_page<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken, CFTokenPage)> {
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_apply_view
     // will be None if this is the case.
     locate_page_in_apply_view(view, owner, issuance_id)

@@ -181,10 +181,13 @@ pub mod rippled {
         pub fn getFieldBlob(self: &STObject, field: &SField) -> &'static STBlob;
         pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
         pub fn getFieldArray(self: &STObject, field: &SField) -> &'static STArray;
+        pub fn peekFieldArray(object: SharedPtr<STObject>, field: &SField) -> UniquePtr<STArray>;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
 
         pub fn getSeqProxy(self: &STTx) -> SeqProxy;
 
+        // TODO: SharedPtr will automatically deref to a &mut SLE, so we might not need
+        //  to write all these wrapper functions to take a &SharedPtr
         pub fn setFlag(sle: &SharedPtr<SLE>, f: u32) -> bool;
         pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
         pub fn setFieldAmountXRP(sle: &SharedPtr<SLE>, field: &SField, v: &XRPAmount);
@@ -198,6 +201,9 @@ pub mod rippled {
         pub fn setFieldH256(sle: &SharedPtr<SLE>, field: &SField, v: &uint256);
         pub fn setFieldBlob(sle: &SharedPtr<SLE>, field: &SField, v: &STBlob);
 
+        pub fn setFieldU32(self: Pin<&mut STObject>, field: &SField, v: u32);
+        pub fn setFieldU64(self: Pin<&mut STObject>, field: &SField, v: u64);
+        pub fn setFieldH256(self: Pin<&mut STObject>, field: &SField, v: &uint256);
 
         pub fn makeFieldAbsent(sle: &SharedPtr<SLE>, field: &SField);
 
@@ -233,6 +239,7 @@ pub mod rippled {
         pub fn upcast(stTx: &STTx) -> &STObject;
         pub fn upcast_sle(sle: &SharedPtr<SLE>) -> SharedPtr<STObject>;
         pub fn upcast_const_sle(sle: &ConstSLE) -> &STObject;
+        pub fn upcast_apply_view(sle: &ApplyView) -> &ReadView;
 
         pub fn getView(self: &PreclaimContext) -> &ReadView;
         pub fn getTx(self: &PreclaimContext) -> &STTx;
@@ -319,7 +326,10 @@ pub mod rippled {
         pub fn new_st_array() -> UniquePtr<STArray>;
         pub fn push_back(self: Pin<&mut STArray>, obj: &STObject);
         pub fn size(self: &STArray) -> usize;
-        pub fn get_from_st_array(arr: &STArray, index: usize) -> &'static STObject;
+        pub fn get_from_const_st_array(arr: &STArray, index: usize) -> &'static STObject;
+        pub fn get_from_st_array(arr: &STArray, index: usize) -> UniquePtr<STObject>;
+
+        pub fn create_inner_object(field: &SField) -> UniquePtr<STObject>;
     }
 
 }

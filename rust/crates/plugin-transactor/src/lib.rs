@@ -330,8 +330,8 @@ impl Fees<'_> {
         Fees { instance }
     }
 
-    pub fn account_reserve(&self, owner_count: usize) -> XrpAmount {
-        self.instance.accountReserve(owner_count).into()
+    pub fn account_reserve(&self, owner_count: u32) -> XrpAmount {
+        self.instance.accountReserve(owner_count as usize).into()
     }
 }
 
@@ -416,6 +416,22 @@ impl ConstSLE {
         ConstSLE { instance }
     }
 
+    pub fn get_account_id(&self, field: &SField) -> AccountId {
+        self.as_st_object().deref().getAccountID(field.instance).into()
+    }
+
+    pub fn get_field_uint32(&self, field: &SField) -> u32 {
+        self.as_st_object().deref().getFieldU32(field.instance)
+    }
+
+    pub fn get_field_uint64(&self, field: &SField) -> u64 {
+        self.as_st_object().deref().getFieldU64(field.instance)
+    }
+
+    pub fn get_field_amount(&self, field: &SField) -> STAmount {
+        STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
+    }
+
     pub fn get_field_array(&self, field: &SField) -> ConstSTArray {
         ConstSTArray::new(self.as_st_object().getFieldArray(field.instance))
     }
@@ -466,8 +482,8 @@ impl SLE {
         STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
     }
 
-    pub fn get_field_array(&self, field: &SField) -> ConstSTArray {
-        ConstSTArray::new(self.as_st_object().deref().getFieldArray(field.instance))
+    pub fn peek_field_array(&self, field: &SField) -> STArray {
+        STArray::new(rippled_bridge::rippled::peekFieldArray(self.as_st_object(), field.instance))
     }
 
     pub fn make_field_absent(&self, field: &SField) {
@@ -507,7 +523,7 @@ impl SLE {
     }
 
     pub fn set_field_account(&mut self, sfield: &SField, value: &AccountId) {
-        rippled_bridge::rippled::setAccountID(&self.instance, sfield.instance, &AccountID::from(value));
+        rippled_bridge::rippled::setAccountID(&mut self.instance, sfield.instance, &AccountID::from(value));
     }
 
     pub fn set_field_amount_xrp(&self, sfield: &SField, value: XrpAmount) {
@@ -547,19 +563,65 @@ impl From<&Keylet> for SLE {
     }
 }
 
-
-pub struct STObject<'a> {
-    instance: &'a rippled_bridge::rippled::STObject,
+pub struct STObject {
+    instance: UniquePtr<rippled_bridge::rippled::STObject>
 }
 
-impl <'a> STObject<'a> {
-    pub fn new(instance: &rippled_bridge::rippled::STObject) -> STObject {
+impl STObject {
+    pub fn new(instance: UniquePtr<rippled_bridge::rippled::STObject>) -> STObject {
         STObject { instance }
     }
 
-    pub fn new_inner(field: SField) -> STObject<'a> {
-        // STObject::new(rippled_bridge::rippled::create_inner_object(field.instance))
-        todo!()
+    pub fn new_inner(field: SField) -> STObject {
+        STObject::new(rippled_bridge::rippled::create_inner_object(field.instance))
+    }
+
+    pub fn get_account_id(&self, field: &SField) -> AccountId {
+        self.instance.getAccountID(field.instance).into()
+    }
+
+    pub fn get_field_uint32(&self, field: &SField) -> u32 {
+        self.instance.getFieldU32(field.instance)
+    }
+
+    pub fn get_field_uint64(&self, field: &SField) -> u64 {
+        self.instance.getFieldU64(field.instance)
+    }
+
+    pub fn get_field_h256(&self, field: &SField) -> Hash256 {
+        self.instance.getFieldH256(field.instance).into()
+    }
+
+    pub fn get_field_amount(&self, field: &SField) -> STAmount {
+        STAmount::new(self.instance.getFieldAmount(field.instance))
+    }
+
+    pub fn set_field_u32(&mut self, sfield: &SField, value: u32) {
+        self.instance.pin_mut().setFieldU32(sfield.instance, value);
+    }
+
+    pub fn set_field_u64(&mut self, sfield: &SField, value: u64) {
+        self.instance.pin_mut().setFieldU64(sfield.instance, value);
+    }
+
+    pub fn set_field_h256(&mut self, sfield: &SField, value: &Hash256) {
+        self.instance.pin_mut().setFieldH256(sfield.instance, &UInt256::from(value));
+    }
+
+    pub fn is_flag(&self, flag: LedgerSpecificFlags) -> bool {
+        self.instance.isFlag(flag.into())
+    }
+
+
+}
+
+pub struct ConstSTObject<'a> {
+    instance: &'a rippled_bridge::rippled::STObject,
+}
+
+impl <'a> ConstSTObject<'a> {
+    pub fn new(instance: &rippled_bridge::rippled::STObject) -> ConstSTObject {
+        ConstSTObject { instance }
     }
 
     pub fn get_account_id(&self, field: &SField) -> AccountId {
@@ -600,11 +662,11 @@ impl <'a>ConstSTArray<'a> {
         self.instance.size()
     }
 
-    pub fn get(&self, index: usize) -> Option<STObject<'static>> {
+    pub fn get(&self, index: usize) -> Option<ConstSTObject<'static>> {
         if index > self.size() - 1 {
             None
         } else {
-            Some(STObject::new(rippled_bridge::rippled::get_from_st_array(self.instance, index)))
+            Some(ConstSTObject::new(rippled_bridge::rippled::get_from_const_st_array(self.instance, index)))
         }
     }
 }
@@ -622,8 +684,20 @@ impl STArray {
         Self { instance }
     }
 
-    pub fn push_back<'a, T: AsRef<STObject<'a>>>(&mut self, elem: &T) {
-        self.instance.pin_mut().push_back(elem.as_ref().instance)
+    pub fn size(&self) -> usize {
+        self.instance.size()
+    }
+
+    pub fn get(&self, index: usize) -> Option<STObject> {
+        if index > self.size() - 1 {
+            None
+        } else {
+            Some(STObject::new(rippled_bridge::rippled::get_from_st_array(&self.instance, index)))
+        }
+    }
+
+    pub fn push_back<'a, T: AsRef<STObject>>(&mut self, elem: &T) {
+        self.instance.pin_mut().push_back(&elem.as_ref().instance)
     }
 }
 
@@ -641,6 +715,15 @@ impl ApplyView<'_> {
             instance,
             fees: Fees::new(fees),
             flags,
+        }
+    }
+
+    pub fn read(&self, keylet: &Keylet) -> Option<ConstSLE> {
+        let maybe_sle = rippled_bridge::rippled::read(self.as_read_view().instance, keylet);
+        if maybe_sle.is_null() {
+            None
+        } else {
+            Some(ConstSLE::new(maybe_sle))
         }
     }
 
@@ -706,6 +789,10 @@ impl ApplyView<'_> {
 
     pub fn adjust_owner_count(&mut self, sle: &SLE, amount: i32, j: &Journal) {
         rippled_bridge::rippled::adjustOwnerCount(self.instance.as_mut(), &sle.instance, amount, j.instance);
+    }
+
+    fn as_read_view(&self) -> ReadView {
+        ReadView::new(rippled_bridge::rippled::upcast_apply_view(&self.instance))
     }
 }
 

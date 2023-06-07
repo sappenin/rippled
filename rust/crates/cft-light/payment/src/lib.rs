@@ -102,7 +102,7 @@ impl Transactor for Payment {
                 None => tefINTERNAL.into(),
                 Some(sle_src) => {
                     let owner_count = sle_src.get_field_uint32(&SField::sf_owner_count());
-                    let reserve = ctx.view.fees().account_reserve(owner_count as usize);
+                    let reserve = ctx.view.fees().account_reserve(owner_count);
 
                     // mPriorBalance is the balance on the sending account BEFORE the
                     // fees were charged. We want to make sure we have enough reserve

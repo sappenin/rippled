@@ -56,7 +56,7 @@ InnerObjectFormats::InnerObjectFormats()
         sfCFToken.getCode(),
         {
             {sfCFTIssuanceID, soeREQUIRED},
-            {sfAmount, soeREQUIRED},
+            {sfCFTAmount, soeREQUIRED},
             {sfLockedAmount, soeDEFAULT},
             {sfFlags, soeDEFAULT}
         });

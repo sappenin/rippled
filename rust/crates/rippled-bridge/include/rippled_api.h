@@ -14,6 +14,7 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include "rust/cxx.h"
 
 std::unique_ptr <std::string>
@@ -126,6 +127,10 @@ inline std::shared_ptr<ripple::STObject> upcast_sle(const std::shared_ptr<ripple
 using ConstSLE = ripple::SLE const;
 inline ripple::STObject const& upcast_const_sle(ConstSLE const& sle) {
     return sle;
+}
+
+inline ripple::ReadView const& upcast_apply_view(ripple::ApplyView const& view) {
+    return view;
 }
 
 constexpr std::uint32_t tfUniversalMask() {
@@ -307,7 +312,10 @@ std::unique_ptr<ripple::STArray> new_st_array() {
     return std::make_unique<ripple::STArray>();
 }
 
-ripple::STObject const& get_from_st_array(ripple::STArray const& array, std::size_t index);
+ripple::STObject const& get_from_const_st_array(ripple::STArray const& array, std::size_t index);
+std::unique_ptr<ripple::STObject> get_from_st_array(ripple::STArray const& array, std::size_t index);
 
+std::unique_ptr<ripple::STObject> create_inner_object(ripple::SField const& field);
 
+std::unique_ptr<ripple::STArray> peekFieldArray(std::shared_ptr<ripple::STObject> obj, ripple::SField const& field);
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

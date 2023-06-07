@@ -1,6 +1,7 @@
-use plugin_transactor::{ConstSLE, SField};
+use std::slice::Iter;
+use plugin_transactor::{ConstSLE, ConstSTArray, SField};
 use plugin_transactor::transactor::ConstLedgerObject;
-use crate::cftoken::CFToken;
+use crate::cftoken::ConstCFToken;
 use crate::cftoken_page::{CFTokenPageID, CFTokens};
 use crate::CFTokenFields;
 
@@ -25,14 +26,14 @@ impl ConstCFTokenPage {
         ConstCFTokenPage { sle }
     }
 
-    pub fn get_tokens<'a>(&self) -> CFTokens<'a> {
+    pub fn get_tokens<'a>(&self) -> ConstCFTokens<'a> {
         let st_array = self.sle.get_field_array(&SField::sf_cf_tokens());
         let mut tokens = vec![];
         for i in 0..st_array.size() {
-            tokens.push(CFToken::new(st_array.get(i).unwrap()));
+            tokens.push(ConstCFToken::new(st_array.get(i).unwrap()));
         }
 
-        CFTokens::new(tokens)
+        ConstCFTokens::new(tokens)
     }
 
     pub fn get_previous_page_min(&self) -> Option<CFTokenPageID> {
@@ -42,4 +43,28 @@ impl ConstCFTokenPage {
             None
         }
     }
+}
+
+pub struct ConstCFTokens<'a> {
+    pub(crate) tokens: Vec<ConstCFToken<'a>>
+}
+
+impl <'a>ConstCFTokens<'a> {
+
+    pub fn new(tokens: Vec<ConstCFToken<'a>>) -> Self {
+        Self { tokens }
+    }
+
+    pub fn len(&self) -> usize {
+        self.tokens.len()
+    }
+
+    pub fn get(&self, index: usize) -> Option<&ConstCFToken<'a>> {
+        self.tokens.get(index)
+    }
+
+    pub fn iter(&self) -> Iter<'_, ConstCFToken<'a>> {
+        self.tokens.iter()
+    }
+
 }

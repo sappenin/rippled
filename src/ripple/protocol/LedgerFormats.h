@@ -142,7 +142,7 @@ enum LedgerEntryType : std::uint16_t
 
         \sa keylet::cftpage_min, keylet::cftpage_max, keylet::cftpage
      */
-     ltCFTOKEN_PAGE = 0x0034,
+     ltCFTOKEN_PAGE = 0x0033,
 
 };
 // clang-format off
