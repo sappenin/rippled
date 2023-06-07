@@ -231,9 +231,15 @@ ripple::uint256 opt_uint256_get_value(const std::unique_ptr<std::optional<ripple
     return optional->value();
 }
 
-std::unique_ptr<OptionalUint256> succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last) {
+std::unique_ptr<OptionalUint256> apply_view_succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last) {
     std::optional<ripple::uint256> result =
         applyView.succ(key.key, last.key);
+    return std::make_unique<std::optional<ripple::uint256>>(result);
+}
+
+std::unique_ptr<OptionalUint256> read_view_succ(ripple::ReadView const& readView, ripple::Keylet const& key, ripple::Keylet const& last) {
+    std::optional<ripple::uint256> result =
+        readView.succ(key.key, last.key);
     return std::make_unique<std::optional<ripple::uint256>>(result);
 }
 

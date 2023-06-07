@@ -6,6 +6,7 @@ use rippled_bridge::TEScodes::tesSUCCESS;
 use crate::cftoken::{CFToken, CFTokenID};
 use crate::cftoken_issuance::CFTokenIssuanceID;
 use crate::cftoken_page::{CFTOKEN_PAGE_TYPE, CFTokenPage, CFTokens, keylet};
+use crate::const_cftoken_page::ConstCFTokenPage;
 use crate::result_codes::TECCodes::tecNO_SUITABLE_CFTOKEN_PAGE;
 
 pub const MAX_TOKENS_PER_PAGE: usize = 32;
@@ -15,12 +16,32 @@ pub const PAGE_MASK: [u8; 32] = [
 ];
 
 
-fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> CFTokenPage {
-    todo!()
+fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFTokenPage> {
+    let first = keylet::cftpage(&keylet::cftpage_min(owner), issuance_id);
+    let last = keylet::cftpage_min(owner);
+
+    // This CFT can only be found in the first page with a key that's strictly
+    // greater than `first`, so look for that, up until the maximum possible
+    // page.
+    let key = view.succ(&first, &last.next()).unwrap_or(last.key);
+    view.read_typed(&Keylet::new(
+        CFTOKEN_PAGE_TYPE as i16,
+        key
+    ))
 }
 
-fn locate_page_in_apply_view<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> CFTokenPage {
-    todo!()
+fn locate_page_in_apply_view<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFTokenPage> {
+    let first = keylet::cftpage(&keylet::cftpage_min(owner), issuance_id);
+    let last = keylet::cftpage_min(owner);
+
+    // This CFT can only be found in the first page with a key that's strictly
+    // greater than `first`, so look for that, up until the maximum possible
+    // page.
+    let key = view.succ(&first, &last.next()).unwrap_or(last.key);
+    view.peek_typed(&Keylet::new(
+        CFTOKEN_PAGE_TYPE as i16,
+        key
+    ))
 }
 
 fn get_or_create_page<'a>(
@@ -216,9 +237,25 @@ pub fn insert_token<'a>(
 // TODO: Maybe implement removeToken if we end up allowing CFToken deletion
 
 pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFToken<'a>> {
-    todo!()
+    // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_read_view
+    // will be None if this is the case.
+    locate_page_in_read_view(view, owner, issuance_id)
+        .map(|page|
+            // We found a candidate page, but the given CFT may not be in it.
+            page.get_tokens().tokens.into_iter()
+                .find(|token| &token.token_id() == issuance_id)
+        ).flatten()
 }
 
 pub fn find_token_and_page<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken<'a>, CFTokenPage)> {
-    todo!()
+    // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_apply_view
+    // will be None if this is the case.
+    locate_page_in_apply_view(view, owner, issuance_id)
+        .map(|page| {
+            // We found a candidate page, but the given CFT may not be in it.
+            // If it is, return a tuple of the CFT and the CFTokenPage
+            page.get_tokens().tokens.into_iter()
+                .find(|token| &token.token_id() == issuance_id)
+                .map(|found| (found, page))
+        }).flatten()
 }

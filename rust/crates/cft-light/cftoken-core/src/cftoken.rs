@@ -57,6 +57,10 @@ impl <'a> CFToken<'a> {
         CFToken { inner, id }
     }
 
+    pub fn new_with_mem_leak() -> CFToken<'a> {
+        CFToken::new(STObject::new_inner(SField::sf_cf_token()))
+    }
+
     pub fn issuance_id(&self) -> CFTokenIssuanceID {
         self.inner.get_h256(&SField::sf_issuance_id())
     }

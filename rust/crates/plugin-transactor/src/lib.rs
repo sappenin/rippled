@@ -14,7 +14,7 @@ use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC,
 use rippled_bridge::rippled::{OptionalUInt64, setFlag};
 use rippled_bridge::TEScodes::tesSUCCESS;
 use rippled_bridge::tx_consequences::SeqProxy;
-use crate::transactor::{AsSTObject, LedgerObject};
+use crate::transactor::{AsSTObject, ConstLedgerObject, LedgerObject};
 
 pub struct PreflightContext<'a> {
     instance: &'a rippled_bridge::rippled::PreflightContext,
@@ -302,6 +302,20 @@ impl<'a> ReadView<'a> {
         }
     }
 
+    pub fn read_typed<T: ConstLedgerObject>(&self, key: &Keylet) -> Option<T> {
+        self.read(key)
+            .map(|sle| T::from(sle))
+    }
+
+    pub fn succ(&self, key: &Keylet, last: &Keylet) -> Option<UInt256> {
+        let result = rippled_bridge::rippled::read_view_succ(self.instance, key, last);
+        if rippled_bridge::rippled::opt_uint256_has_value(&result) {
+            Some(rippled_bridge::rippled::opt_uint256_get_value(&result))
+        } else {
+            None
+        }
+    }
+
     pub fn fees(&self) -> Fees {
         Fees::new(self.instance.fees())
     }
@@ -402,8 +416,24 @@ impl ConstSLE {
         ConstSLE { instance }
     }
 
+    pub fn get_field_array(&self, field: &SField) -> ConstSTArray {
+        ConstSTArray::new(self.as_st_object().getFieldArray(field.instance))
+    }
+
+    pub fn is_field_present(&self, field: &SField) -> bool {
+        self.as_st_object().isFieldPresent(field.instance)
+    }
+
+    pub fn get_field_h256(&self, field: &SField) -> Hash256 {
+        self.as_st_object().deref().getFieldH256(field.instance).into()
+    }
+
     pub fn flags(&self) -> u32 {
         self.instance.getFlags()
+    }
+
+    fn as_st_object(&self) -> &rippled_bridge::rippled::STObject {
+        rippled_bridge::rippled::upcast_const_sle(&self.instance)
     }
 }
 
@@ -522,9 +552,14 @@ pub struct STObject<'a> {
     instance: &'a rippled_bridge::rippled::STObject,
 }
 
-impl STObject<'_> {
+impl <'a> STObject<'a> {
     pub fn new(instance: &rippled_bridge::rippled::STObject) -> STObject {
         STObject { instance }
+    }
+
+    pub fn new_inner(field: SField) -> STObject<'a> {
+        // STObject::new(rippled_bridge::rippled::create_inner_object(field.instance))
+        todo!()
     }
 
     pub fn get_account_id(&self, field: &SField) -> AccountId {
@@ -661,7 +696,7 @@ impl ApplyView<'_> {
     }
 
     pub fn succ(&mut self, key: &Keylet, last: &Keylet) -> Option<UInt256> {
-        let result = rippled_bridge::rippled::succ(self.instance.as_mut(), key, last);
+        let result = rippled_bridge::rippled::apply_view_succ(self.instance.as_mut(), key, last);
         if rippled_bridge::rippled::opt_uint256_has_value(&result) {
             Some(rippled_bridge::rippled::opt_uint256_get_value(&result))
         } else {

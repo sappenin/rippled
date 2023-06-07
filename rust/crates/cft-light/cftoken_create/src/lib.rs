@@ -77,6 +77,7 @@ impl Transactor for CFTokenCreate {
     }
 
     fn do_apply<'a>(ctx: &'a mut ApplyContext<'a>, m_prior_balance: XrpAmount, m_source_balance: XrpAmount) -> TER {
+
         tesSUCCESS.into()
     }
 

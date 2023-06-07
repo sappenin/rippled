@@ -269,14 +269,14 @@ Unlike other object identifiers on the XRP Ledger, which are derived by hashing 
 using `SHA512-Half`, **`CFTokenPage`** identifiers are constructed so as to specfically allow for the adoption of a more
 efficient paging structure, designed to enable user accounts to efficiently hold many CFTs at the same time.
 
-To that end, a unique CFTokenPage ID (a.k.a., `CFTokenPageID`) is derived by concatenating a 196-bit value that uniquely
+To that end, a unique CFTokenPage ID (a.k.a., `CFTokenPageID`) is derived by concatenating a 192-bit value that uniquely
 identifies a particular account's holdings of CFT, followed by a 64-bit value that uniquely identifies a particular CFT
 issuance. Using this construction enables efficient lookups of individual `CFTokenPage` objects without requiring
 iteration of the doubly-linked list of all CFTokenPages.
 
 More formally, we assume:
 
-- The function `high196(x)` returns the "high" 196 bits of a 256-bit value.
+- The function `high192(x)` returns the "high" 192 bits of a 256-bit value.
 - The function `low64(x)` returns the "low" 64-bits of a 256-bit value.
 - A `CFTokenIssuanceID` uniqely identifies a CFT Issuance as defined above in ["CFTokenIssuance Ledger Identifier"].
 - A `CFTokenHolderID` uniquely identifies a holder of some amount of CFT (as opposed to other token types such as an
@@ -286,7 +286,7 @@ More formally, we assume:
 
 Therefore:
 
-- Let `CFTokenPageID` equal `high196(CFTokenHolderId)` concatenated with `low64(CFTokenIssuanceId)`.
+- Let `CFTokenPageID` equal `high192(CFTokenHolderId)` concatenated with `low64(CFTokenIssuanceId)`.
 - Let `CFTokenIssuanceID` `A` only be included in a page with `CFTokenPageId` `B` if and only if `low64(A) >= low64(B)`.
 
 This scheme is similar to the existing scheme for organizing `NFToken` objects into `NFTokenPage`s.

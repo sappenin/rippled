@@ -123,6 +123,11 @@ inline std::shared_ptr<ripple::STObject> upcast_sle(const std::shared_ptr<ripple
     return sle;
 }
 
+using ConstSLE = ripple::SLE const;
+inline ripple::STObject const& upcast_const_sle(ConstSLE const& sle) {
+    return sle;
+}
+
 constexpr std::uint32_t tfUniversalMask() {
     return ripple::tfUniversalMask;
 }
@@ -270,7 +275,8 @@ bool opt_uint256_has_value(const std::unique_ptr<std::optional<ripple::uint256>>
 ripple::uint256 opt_uint256_get_value(const std::unique_ptr<std::optional<ripple::uint256>> & optional);
 
 using OptionalUint256 = std::optional<ripple::uint256>;
-std::unique_ptr<OptionalUint256> succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last);
+std::unique_ptr<OptionalUint256> apply_view_succ(ripple::ApplyView& applyView, ripple::Keylet const& key, ripple::Keylet const& last);
+std::unique_ptr<OptionalUint256> read_view_succ(ripple::ReadView const& readView, ripple::Keylet const& key, ripple::Keylet const& last);
 
 void
 adjustOwnerCount(
@@ -285,7 +291,6 @@ bool is_zero(ripple::STAmount const& amount) {
     return amount == beast::zero;
 }
 
-using ConstSLE = ripple::SLE const;
 std::shared_ptr<ConstSLE> read(ripple::ReadView const& readView, ripple::Keylet const& k) {
     return readView.read(k);
 }
@@ -303,4 +308,6 @@ std::unique_ptr<ripple::STArray> new_st_array() {
 }
 
 ripple::STObject const& get_from_st_array(ripple::STArray const& array, std::size_t index);
+
+
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

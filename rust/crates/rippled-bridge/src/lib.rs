@@ -232,6 +232,7 @@ pub mod rippled {
 
         pub fn upcast(stTx: &STTx) -> &STObject;
         pub fn upcast_sle(sle: &SharedPtr<SLE>) -> SharedPtr<STObject>;
+        pub fn upcast_const_sle(sle: &ConstSLE) -> &STObject;
 
         pub fn getView(self: &PreclaimContext) -> &ReadView;
         pub fn getTx(self: &PreclaimContext) -> &STTx;
@@ -257,7 +258,8 @@ pub mod rippled {
         pub fn opt_uint256_has_value(optional: &UniquePtr<OptionalUint256>) -> bool;
         pub fn opt_uint256_get_value(optional: &UniquePtr<OptionalUint256>) -> uint256;
         pub fn seq(self: &ApplyView) -> u32;
-        pub fn succ(apply_vew: Pin<&mut ApplyView>, key: &Keylet, last: &Keylet) -> UniquePtr<OptionalUint256>;
+        pub fn apply_view_succ(apply_view: Pin<&mut ApplyView>, key: &Keylet, last: &Keylet) -> UniquePtr<OptionalUint256>;
+        pub fn read_view_succ(read_view: &ReadView, key: &Keylet, last: &Keylet) -> UniquePtr<OptionalUint256>;
         pub fn adjustOwnerCount(view: Pin<&mut ApplyView>, sle: &SharedPtr<SLE>, amount: i32, j: &Journal);
         pub fn next(self: &uint256) -> uint256;
 
@@ -787,6 +789,12 @@ impl UInt256 {
 
     pub fn data(&self) -> [u8; 32] {
         self.data
+    }
+}
+
+impl AsRef<[u8]> for UInt256 {
+    fn as_ref(&self) -> &[u8] {
+        self.data.as_ref()
     }
 }
 
