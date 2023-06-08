@@ -32,8 +32,8 @@ impl CFTokenPage {
         CFTokenPage { sle }
     }
 
-    pub fn get_tokens(&self) -> CFTokens {
-        let st_array = self.sle.peek_field_array(&SField::sf_cf_tokens());
+    pub fn get_tokens<'a>(&self) -> CFTokens<'a> {
+        let mut st_array = self.sle.peek_field_array(&SField::sf_cf_tokens());
         let mut tokens = vec![];
         for i in 0..st_array.size() {
             tokens.push(CFToken::from(st_array.get(i).unwrap()));
@@ -69,13 +69,13 @@ impl From<&Keylet> for CFTokenPage {
     }
 }
 
-pub struct CFTokens {
-    pub(crate) tokens: Vec<CFToken>
+pub struct CFTokens<'a> {
+    pub(crate) tokens: Vec<CFToken<'a>>
 }
 
-impl CFTokens {
+impl<'a> CFTokens<'a> {
 
-    pub fn new(tokens: Vec<CFToken>) -> Self {
+    pub fn new(tokens: Vec<CFToken<'a>>) -> CFTokens<'a> {
         Self { tokens }
     }
 
@@ -89,7 +89,7 @@ impl CFTokens {
         self.tokens.len()
     }
 
-    pub fn insert_sorted(&mut self, cftoken: CFToken) {
+    pub fn insert_sorted(&mut self, cftoken: CFToken<'a>) {
         match self.tokens.binary_search(&cftoken) {
             Ok(_) => {}
             Err(index) => self.tokens.insert(index, cftoken)
@@ -97,7 +97,7 @@ impl CFTokens {
 
     }
 
-    pub fn get(&self, index: usize) -> Option<&CFToken> {
+    pub fn get(&self, index: usize) -> Option<&CFToken<'a>> {
         self.tokens.get(index)
     }
 
@@ -109,11 +109,11 @@ impl CFTokens {
         array
     }
 
-    pub fn iter(&self) -> Iter<'_, CFToken> {
+    pub fn iter(&self) -> Iter<'_, CFToken<'a>> {
         self.tokens.iter()
     }
 
-    pub fn push_back(&mut self, cf_token: CFToken) {
+    pub fn push_back(&mut self, cf_token: CFToken<'a>) {
         self.tokens.push(cf_token);
     }
 }

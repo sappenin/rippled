@@ -332,7 +332,7 @@ pub mod rippled {
         pub fn push_back(self: Pin<&mut STArray>, obj: &STObject);
         pub fn size(self: &STArray) -> usize;
         pub fn get_from_const_st_array(arr: &STArray, index: usize) -> &'static STObject;
-        pub fn get_from_st_array(arr: &STArray, index: usize) -> UniquePtr<STObject>;
+        pub fn get_from_st_array<'a, 'b>(arr: Pin<&'a mut STArray>, index: usize) -> Pin<&'b mut STObject>;
 
         pub fn create_inner_object(field: &SField) -> UniquePtr<STObject>;
     }

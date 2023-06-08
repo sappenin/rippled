@@ -219,7 +219,7 @@ fn create_new_page(
 pub fn insert_token<'a>(
     view: &'a mut ApplyView,
     owner: &'a AccountId,
-    cft: CFToken,
+    cft: CFToken<'a>,
     journal: &Journal
 ) -> TER {
     get_or_create_page(view, owner, &cft.token_id(), journal)
@@ -248,7 +248,13 @@ pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a
         ).flatten()
 }
 
-pub fn find_token_and_page<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken, CFTokenPage)> {
+// The lifetimes here are very weird. If this were pure rust, then ApplyView should really
+// outlive everything else (eg the returned CFToken) because the CFToken is a wrapper of data
+// in the ApplyView. However, we need Rust to drop the &mut to the ApplyView after calling this
+// function. If the lifetime of the &mut ApplyView is the same as the lifetime of the CFToken's
+// internal reference, then assumes we need to keep the &mut ApplyView as long as the CFToken is
+// in use -- therefore, we disentangle the lifetimes of the &mut ApplyView and the CFToken<'a>
+pub fn find_token_and_page<'b, 'a>(view: &'b mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken<'a>, CFTokenPage)> {
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_apply_view
     // will be None if this is the case.
     locate_page_in_apply_view(view, owner, issuance_id)

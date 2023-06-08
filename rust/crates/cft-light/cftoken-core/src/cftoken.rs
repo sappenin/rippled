@@ -89,14 +89,14 @@ impl <'a> ConstCFToken<'a> {
 
 
 ///////// Mutable variant
-pub struct CFToken {
-    pub(crate) inner: STObject,
+pub struct CFToken<'a> {
+    pub(crate) inner: STObject<'a>,
     id: CFTokenID
 }
 
-impl Eq for CFToken {}
+impl<'a> Eq for CFToken<'a> {}
 
-impl Ord for CFToken {
+impl<'a> Ord for CFToken<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
         // The sort of CFTokens needs to be fully deterministic, but the sort
         // is weird because we sort on the low 64-bits first. But if the low
@@ -111,7 +111,7 @@ impl Ord for CFToken {
     }
 }
 
-impl PartialEq<Self> for CFToken {
+impl<'a> PartialEq<Self> for CFToken<'a> {
     fn eq(&self, other: &Self) -> bool {
         match self.cmp(other) {
             Ordering::Equal => true,
@@ -120,26 +120,26 @@ impl PartialEq<Self> for CFToken {
     }
 }
 
-impl PartialOrd<Self> for CFToken {
+impl<'a> PartialOrd<Self> for CFToken<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl AsRef<STObject> for CFToken {
-    fn as_ref(&self) -> &STObject {
+impl<'a> AsRef<STObject<'a>> for CFToken<'a> {
+    fn as_ref(&self) -> &STObject<'a> {
         &self.inner
     }
 }
 
-impl From<STObject> for CFToken {
-    fn from(value: STObject) -> Self {
+impl<'a> From<STObject<'a>> for CFToken<'a> {
+    fn from(value: STObject<'a>) -> Self {
         let id = value.get_field_h256(&SField::sf_issuance_id());
         CFToken { inner: value, id }
     }
 }
-impl CFToken {
-    pub fn new() -> CFToken {
+impl<'a> CFToken<'a> {
+    pub fn new() -> CFToken<'a> {
         CFToken::from(STObject::new_inner(SField::sf_cf_token()))
     }
 

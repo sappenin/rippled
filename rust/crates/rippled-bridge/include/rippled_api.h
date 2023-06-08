@@ -313,7 +313,8 @@ std::unique_ptr<ripple::STArray> new_st_array() {
 }
 
 ripple::STObject const& get_from_const_st_array(ripple::STArray const& array, std::size_t index);
-std::unique_ptr<ripple::STObject> get_from_st_array(ripple::STArray const& array, std::size_t index);
+//std::unique_ptr<ripple::STObject> get_from_st_array(ripple::STArray const& array, std::size_t index);
+ripple::STObject& get_from_st_array(ripple::STArray& array, std::size_t index);
 
 std::unique_ptr<ripple::STObject> create_inner_object(ripple::SField const& field);
 

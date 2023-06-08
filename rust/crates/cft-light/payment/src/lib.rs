@@ -200,10 +200,11 @@ impl Transactor for Payment {
             // We can assume the issuance and destination tokens exist because we checked for them
             // in preclaim, so it's fine to .unwrap() here.
             let mut issuance = ctx.view.peek_typed::<CFTokenIssuance>(&issuance_keylet).unwrap();
+            let issuance_key = issuance_keylet.key.into();
             let mut dest_token_and_page = cftoken_utils::find_token_and_page(
                 &mut ctx.view,
                 &dest_account_id,
-                &issuance_keylet.key.into(),
+                &issuance_key,
             ).unwrap();
 
             dest_token_and_page.0.set_amount(dest_token_and_page.0.amount() + cft_amount.value());
@@ -217,7 +218,7 @@ impl Transactor for Payment {
                 let mut source_token_and_page = cftoken_utils::find_token_and_page(
                     &mut ctx.view,
                     &source_account_id,
-                    &issuance_keylet.key.into(),
+                    &issuance_key,
                 ).unwrap();
 
                 source_token_and_page.0.set_amount(source_token_and_page.0.amount() - cft_amount.value());
