@@ -1,8 +1,9 @@
 use std::cmp::Ordering;
-use xrpl_rust_sdk_core::core::types::AccountId;
-use plugin_transactor::{ApplyView, Journal, ReadView, SLE, STArray};
+use xrpl_rust_sdk_core::core::types::{AccountId, Hash256};
+use plugin_transactor::{ApplyView, Journal, ReadView, SField, SLE, STArray};
 use rippled_bridge::{Keylet, TER, UInt256};
 use rippled_bridge::TEScodes::tesSUCCESS;
+use rippled_bridge::type_ids::SerializedTypeID;
 use crate::cftoken::{ConstCFToken, CFTokenID, CFToken};
 use crate::cftoken_issuance::CFTokenIssuanceID;
 use crate::cftoken_page::{CFTOKEN_PAGE_TYPE, CFTokenPage, CFTokens, keylet};
@@ -261,7 +262,13 @@ pub fn find_token_and_page<'b, 'a>(view: &'b mut ApplyView, owner: &'a AccountId
         .map(|page| {
             // We found a candidate page, but the given CFT may not be in it.
             // If it is, return a tuple of the CFT and the CFTokenPage
-            page.get_tokens().tokens.into_iter()
+            let tokens = page.get_tokens();
+            if tokens.len() == 1 {
+                let obj = tokens.get(0).unwrap();
+                let issuance_id: Hash256 = obj.inner.get_field_h256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28));
+                println!("obj3. {:?}", issuance_id.as_ref());
+            }
+            tokens.tokens.into_iter()
                 .find(|token| &token.token_id() == issuance_id)
                 .map(|found| (found, page))
         }).flatten()

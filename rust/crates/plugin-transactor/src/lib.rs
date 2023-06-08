@@ -628,7 +628,7 @@ impl<'a> STObject<'a> {
         match self {
             STObject::UniquePtr(up) => up.getFieldH256(field.instance).into(),
             STObject::Pin(p) => {
-                (*p).deref().getFieldH256(field.instance).into()
+                p.getFieldH256(field.instance).into()
             }
         }
     }
