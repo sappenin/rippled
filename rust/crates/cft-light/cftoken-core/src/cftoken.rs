@@ -80,6 +80,11 @@ impl <'a> ConstCFToken<'a> {
     pub fn flags(&self) -> u32 {
         self.inner.get_uint32(&SField::sf_flags())
     }
+
+    pub fn is_frozen(&self) -> bool {
+        // TODO: Once we implement issuance freezing, check if flag is set
+        false
+    }
 }
 
 

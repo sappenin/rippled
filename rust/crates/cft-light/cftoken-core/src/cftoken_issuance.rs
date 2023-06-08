@@ -1,4 +1,4 @@
-use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256};
+use xrpl_rust_sdk_core::core::types::{AccountId, Currency, Hash160, Hash256};
 use plugin_transactor::{SField, SLE};
 use plugin_transactor::transactor::{LedgerObject};
 use rippled_bridge::Keylet;
@@ -29,6 +29,13 @@ impl CFTokenIssuance {
         CFTokenIssuance { sle: SLE::from(keylet) }
     }
 
+    pub fn issuer(&self) -> AccountId {
+        self.sle.get_account_id(&SField::sf_issuer())
+    }
+
+    pub fn outstanding_amount(&self) -> u64 {
+        self.sle.get_field_uint64(&SField::sf_outstanding_amount())
+    }
     pub fn set_transfer_fee(mut self, fee: u16) -> Self {
         if fee != 0 {
             self.sle.set_field_u16(&SField::sf_transfer_fee(), fee);
@@ -80,9 +87,21 @@ impl CFTokenIssuance {
         self.sle.set_field_h160(&SField::sf_asset_code(), code);
         self
     }
+
+    pub fn is_frozen(&self) -> bool {
+        // TODO: Once we implement issuance freezing, check if flag is set
+        false
+    }
 }
 
 pub fn keylet(issuer: &AccountId, asset_code: &Hash160) -> Keylet {
+    Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
+        .key(issuer)
+        .key(asset_code)
+        .build()
+}
+
+pub fn keylet_from_currency(issuer: &AccountId, asset_code: &Currency) -> Keylet {
     Keylet::builder(CFT_ISSUANCE_TYPE as i16, CFT_ISSUANCE_TYPE)
         .key(issuer)
         .key(asset_code)

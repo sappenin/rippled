@@ -8,6 +8,8 @@ pub mod cftoken_page;
 pub mod fields;
 pub mod result_codes;
 pub mod const_cftoken_page;
+pub mod cft_amount;
+pub mod const_cftoken_issuance;
 
 pub use fields::*;
 

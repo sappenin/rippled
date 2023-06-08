@@ -44,7 +44,7 @@ static const std::uint64_t tenTo17 = tenTo14 * 1000;
 static std::int64_t
 getSNValue(STAmount const& amount)
 {
-    if (!amount.native() && !amount.cft())
+    if (!amount.native() && !amount.isCft())
         Throw<std::runtime_error>("amount is not native or CFT!");
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
@@ -379,7 +379,7 @@ operator+(STAmount const& v1, STAmount const& v2)
         };
     }
 
-    if (v1.native() || v1.cft())
+    if (v1.native() || v1.isCft())
         return {v1.getFName(), v1.type(), getSNValue(v1) + getSNValue(v2)};
 
     int ov1 = v1.exponent(), ov2 = v2.exponent();
@@ -487,7 +487,7 @@ STAmount::setJson(Json::Value& elem) const
         elem[jss::currency] = to_string(mIssue.currency);
         elem[jss::issuer] = to_string(mIssue.account);
 
-        if (cft()) {
+        if (isCft()) {
             elem[jss::isCft] = true;
         }
     }
@@ -548,7 +548,7 @@ STAmount::getText() const
     bool const scientific(
         (mOffset != 0) && ((mOffset < -25) || (mOffset > -5)));
 
-    if (native() || cft() || scientific)
+    if (native() || isCft() || scientific)
     {
         ret.append(raw_value);
 
@@ -743,7 +743,7 @@ STAmount::canonicalize()
             Throw<std::runtime_error>("Native currency amount out of range");
 
         return;
-    } else if (cft()) {
+    } else if (isCft()) {
         // TODO: Canonicalize CFT Amounts maybe?
     } else {
         if (mValue == 0)

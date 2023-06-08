@@ -7,7 +7,7 @@ use cxx::{CxxString, CxxVector, ExternType, SharedPtr, type_id, UniquePtr};
 use cxx::kind::Trivial;
 use cxx::vector::VectorElement;
 use sha2::{Sha512, Digest};
-use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Hash160, Hash256, XrpAmount};
+use xrpl_rust_sdk_core::core::types::{ACCOUNT_ONE, AccountId, Currency, Hash160, Hash256, XrpAmount};
 
 pub mod ter;
 pub mod flags;
@@ -61,6 +61,7 @@ pub mod rippled {
         type TEScodes = super::TEScodes;
         type TECcodes = super::TECcodes;
         type AccountID = super::AccountID;
+        type Currency = super::BridgedCurrency;
         type NotTEC = super::NotTEC;
         type TER = super::TER;
         pub type PreflightContext;
@@ -213,6 +214,10 @@ pub mod rippled {
         pub fn native(self: &STAmount) -> bool;
         pub fn st_amount_gt(amount1: &STAmount, amount2: &STAmount) -> bool;
         pub fn st_amount_eq(amount1: &STAmount, amount2: &STAmount) -> bool;
+        pub fn isCft(self: &STAmount) -> bool;
+        pub fn mantissa(self: &STAmount) -> u64;
+        pub fn getIssuer(self: &STAmount) -> &AccountID;
+        pub fn getCurrency(self: &STAmount) -> &Currency;
 
         pub fn sfRegularKey() -> &'static SField;
         pub fn sfAccount() -> &'static SField;
@@ -403,6 +408,12 @@ impl From<AccountID> for AccountId {
     }
 }
 
+impl From<&AccountID> for AccountId {
+    fn from(value: &AccountID) -> Self {
+        AccountId::from(value.data_)
+    }
+}
+
 impl From<&AccountId> for AccountID {
     fn from(value: &AccountId) -> Self {
         AccountID {
@@ -421,6 +432,45 @@ impl From<AccountId> for AccountID {
 
 unsafe impl cxx::ExternType for AccountID {
     type Id = type_id!("ripple::AccountID");
+    type Kind = Trivial;
+}
+
+#[repr(C)]
+#[derive(PartialEq)]
+pub struct BridgedCurrency {
+    data_: [u8; 20],
+}
+
+impl From<BridgedCurrency> for Currency {
+    fn from(value: BridgedCurrency) -> Self {
+        Currency::new(value.data_).unwrap()
+    }
+}
+
+impl From<&BridgedCurrency> for Currency {
+    fn from(value: &BridgedCurrency) -> Self {
+        Currency::new(value.data_).unwrap()
+    }
+}
+
+impl From<&Currency> for BridgedCurrency {
+    fn from(value: &Currency) -> Self {
+        BridgedCurrency {
+            data_: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+impl From<Currency> for BridgedCurrency {
+    fn from(value: Currency) -> Self {
+        BridgedCurrency {
+            data_: value.as_ref().try_into().unwrap()
+        }
+    }
+}
+
+unsafe impl cxx::ExternType for BridgedCurrency {
+    type Id = type_id!("ripple::Currency");
     type Kind = Trivial;
 }
 

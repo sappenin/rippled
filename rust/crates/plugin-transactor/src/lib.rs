@@ -9,7 +9,7 @@ use std::pin::Pin;
 use cxx::{CxxVector, SharedPtr, UniquePtr};
 pub use transactor::Transactor;
 
-use xrpl_rust_sdk_core::core::types::{AccountId, Hash160, Hash256, XrpAmount};
+use xrpl_rust_sdk_core::core::types::{AccountId, Currency, Hash160, Hash256, XrpAmount};
 use rippled_bridge::{AccountID, ApplyFlags, Keylet, LedgerSpecificFlags, NotTEC, UInt160, UInt256, XRPAmount};
 use rippled_bridge::rippled::{OptionalUInt64, setFlag};
 use rippled_bridge::TEScodes::tesSUCCESS;
@@ -360,6 +360,22 @@ impl STAmount<'_> {
 
     pub fn native(&self) -> bool {
         self.instance.native()
+    }
+
+    pub fn is_cft(&self) -> bool {
+        self.instance.isCft()
+    }
+
+    pub fn mantissa(&self) -> u64 {
+        self.instance.mantissa()
+    }
+
+    pub fn issuer(&self) -> AccountId {
+        AccountId::from(self.instance.getIssuer())
+    }
+
+    pub fn currency(&self) -> Currency {
+        Currency::from(self.instance.getCurrency())
     }
 }
 

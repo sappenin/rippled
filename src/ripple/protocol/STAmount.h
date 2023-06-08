@@ -153,7 +153,7 @@ public:
     native() const noexcept;
 
     bool
-    cft() const noexcept;
+    isCft() const noexcept;
 
     bool
     negative() const noexcept;
@@ -324,7 +324,7 @@ STAmount::native() const noexcept
 }
 
 inline bool
-STAmount::cft() const noexcept
+STAmount::isCft() const noexcept
 {
     return mType == Type::CFT;
 }

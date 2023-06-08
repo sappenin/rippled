@@ -9,3 +9,4 @@ edition = "2021"
 plugin-transactor = { path = "../../plugin-transactor" }
 rippled-bridge = { path = "../../rippled-bridge" }
 xrpl-rust-sdk-core = { workspace = true }
+hex = "0.4.3"

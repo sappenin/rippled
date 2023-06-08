@@ -18,12 +18,13 @@ pub const PAGE_MASK: [u8; 32] = [
 
 fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFTokenPage> {
     let first = keylet::cftpage(&keylet::cftpage_min(owner), issuance_id);
-    let last = keylet::cftpage_min(owner);
+    let last = keylet::cftpage_max(owner);
 
     // This CFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
     // page.
     let key = view.succ(&first, &last.next()).unwrap_or(last.key);
+    println!("page key on lookup: {}", hex::encode_upper(&key.data()));
     view.read_typed(&Keylet::new(
         CFTOKEN_PAGE_TYPE as i16,
         key
@@ -32,7 +33,7 @@ fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuan
 
 fn locate_page_in_apply_view<'a>(view: &'a mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<CFTokenPage> {
     let first = keylet::cftpage(&keylet::cftpage_min(owner), issuance_id);
-    let last = keylet::cftpage_min(owner);
+    let last = keylet::cftpage_max(owner);
 
     // This CFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
