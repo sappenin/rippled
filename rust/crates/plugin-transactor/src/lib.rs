@@ -741,7 +741,6 @@ impl <'a> STArray<'a> {
         STArray::UniquePtr(rippled_bridge::rippled::new_st_array())
     }
 
-    // TODO Make this take a Pin
     pub fn new(instance: Pin<&'a mut rippled_bridge::rippled::STArray>) -> STArray<'a> {
         Self::Pin(instance)
     }
@@ -761,11 +760,8 @@ impl <'a> STArray<'a> {
                 STArray::UniquePtr(up) => up.pin_mut(),
                 STArray::Pin(p) => p.as_mut()
             };
-            let obj: Pin<&mut rippled_bridge::rippled::STObject> = rippled_bridge::rippled::get_from_st_array(pinned_self, index);
-            let issuance_id: UInt256 = obj.deref().getFieldH256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28).instance);
-            println!("obj. {:?}", issuance_id.data());
 
-            Some(STObject::Pin(obj))
+            Some(STObject::Pin(rippled_bridge::rippled::get_from_st_array(pinned_self, index)))
         }
     }
 

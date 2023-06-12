@@ -38,25 +38,10 @@ impl CFTokenPage {
         let mut tokens = vec![];
         for i in 0..st_array.size() {
             let obj = st_array.get(i).unwrap();
-            let issuance_id: Hash256 = obj.get_field_h256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28));
-            println!("obj2. {:?}", issuance_id.as_ref());
             tokens.push(CFToken::from(obj));
         }
 
-        if tokens.len() == 1 {
-            let obj = tokens.get(0).unwrap();
-            let issuance_id: Hash256 = obj.inner.get_field_h256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28));
-            println!("obj3. {:?}", issuance_id.as_ref());
-        }
-        let tokens1 = CFTokens::new(tokens);
-
-        if tokens1.len() == 1 {
-            let obj = tokens1.get(0).unwrap();
-            let issuance_id: Hash256 = obj.inner.get_field_h256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28));
-            println!("obj3. {:?}", issuance_id.as_ref());
-        }
-
-        tokens1
+        CFTokens::new(tokens)
     }
 
     pub fn get_previous_page_min(&self) -> Option<CFTokenPageID> {
