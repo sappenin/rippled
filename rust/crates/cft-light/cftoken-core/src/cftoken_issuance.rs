@@ -1,3 +1,5 @@
+use std::str::FromStr;
+use xrpl_rust_sdk_core::core::crypto::ToFromBase58;
 use xrpl_rust_sdk_core::core::types::{AccountId, Currency, Hash160, Hash256};
 use plugin_transactor::{SField, SLE};
 use plugin_transactor::transactor::{LedgerObject};
@@ -106,4 +108,12 @@ pub fn keylet_from_currency(issuer: &AccountId, asset_code: &Currency) -> Keylet
         .key(issuer)
         .key(asset_code)
         .build()
+}
+
+#[test]
+fn keylet_and_keylet_from_currency_same() {
+    let k1 = keylet(&AccountId::from_base58("rMZHjgNPYHEXkQNMHrMye6qYzVMeTWo4tg").unwrap(), &Hash160::try_from_hex("0000000000000000000000005553440000000000").unwrap());
+    let k2 = keylet_from_currency(&AccountId::from_base58("rMZHjgNPYHEXkQNMHrMye6qYzVMeTWo4tg").unwrap(), &Currency::try_from(hex::decode("0000000000000000000000005553440000000000").unwrap().as_slice()).unwrap());
+
+    assert_eq!(k1, k2)
 }

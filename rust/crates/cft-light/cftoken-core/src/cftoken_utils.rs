@@ -17,7 +17,7 @@ pub const PAGE_MASK: [u8; 32] = [
 ];
 
 
-fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFTokenPage> {
+fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFTokenPage<'a>> {
     let first = keylet::cftpage(&keylet::cftpage_min(owner), issuance_id);
     let last = keylet::cftpage_max(owner);
 
@@ -28,7 +28,7 @@ fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuan
     println!("page key on lookup: {}", hex::encode_upper(&key.data()));
     view.read_typed(&Keylet::new(
         CFTOKEN_PAGE_TYPE as i16,
-        key
+        key,
     ))
 }
 
@@ -42,7 +42,7 @@ fn locate_page_in_apply_view<'a>(view: &'a mut ApplyView, owner: &'a AccountId, 
     let key = view.succ(&first, &last.next()).unwrap_or(last.key);
     view.peek_typed(&Keylet::new(
         CFTOKEN_PAGE_TYPE as i16,
-        key
+        key,
     ))
 }
 
@@ -50,7 +50,7 @@ fn get_or_create_page<'a>(
     view: &'a mut ApplyView,
     owner: &'a AccountId,
     issuance_id: &'a CFTokenID,
-    journal: &'a Journal
+    journal: &'a Journal,
 ) -> Option<CFTokenPage> {
     let base = keylet::cftpage_min(owner);
     let first = keylet::cftpage(&base, issuance_id);
@@ -184,7 +184,7 @@ fn get_or_create_page<'a>(
                     view.adjust_owner_count(
                         &account_root,
                         1,
-                        journal
+                        journal,
                     );
 
                     if first.key < new_page_k.key {
@@ -202,7 +202,7 @@ fn create_new_page(
     view: &mut ApplyView,
     keylet: &Keylet,
     account_root: &SLE,
-    journal: &Journal
+    journal: &Journal,
 ) -> CFTokenPage {
     let mut page = CFTokenPage::from(keylet);
     page.set_tokens(CFTokens::new_empty());
@@ -210,7 +210,7 @@ fn create_new_page(
     view.adjust_owner_count(
         account_root,
         1,
-        journal
+        journal,
     );
     page
 }
@@ -221,7 +221,7 @@ pub fn insert_token<'a>(
     view: &'a mut ApplyView,
     owner: &'a AccountId,
     cft: CFToken<'a>,
-    journal: &Journal
+    journal: &Journal,
 ) -> TER {
     get_or_create_page(view, owner, &cft.token_id(), journal)
         .map_or(tecNO_SUITABLE_CFTOKEN_PAGE.into(), |mut page| {
@@ -242,11 +242,12 @@ pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_read_view
     // will be None if this is the case.
     locate_page_in_read_view(view, owner, issuance_id)
-        .map(|page|
+        .map(|page| {
             // We found a candidate page, but the given CFT may not be in it.
-            page.get_tokens().tokens.into_iter()
+            let tokens = page.get_tokens();
+            tokens.tokens.into_iter()
                 .find(|token| &token.token_id() == issuance_id)
-        ).flatten()
+        }).flatten()
 }
 
 // The lifetimes here are very weird. If this were pure rust, then ApplyView should really

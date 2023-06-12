@@ -7,8 +7,9 @@ pub trait LedgerObject: From<SLE> {
     fn get_sle(&self) -> &SLE;
 }
 
-pub trait ConstLedgerObject: From<ConstSLE> {
+pub trait ConstLedgerObject<'a> {
     fn get_sle(&self) -> &ConstSLE;
+    fn from(sle: ConstSLE<'a>) -> Self;
 }
 
 pub trait AsSTObject {

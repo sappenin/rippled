@@ -5,28 +5,26 @@ use crate::cftoken::ConstCFToken;
 use crate::cftoken_page::{CFTokenPageID, CFTokens};
 use crate::CFTokenFields;
 
-pub struct ConstCFTokenPage {
-    sle: ConstSLE
+pub struct ConstCFTokenPage<'a> {
+    sle: ConstSLE<'a>
 }
 
-impl ConstLedgerObject for ConstCFTokenPage {
+impl<'a> ConstLedgerObject<'a> for ConstCFTokenPage<'a> {
     fn get_sle(&self) -> &ConstSLE {
         &self.sle
     }
-}
 
-impl From<ConstSLE> for ConstCFTokenPage {
-    fn from(value: ConstSLE) -> Self {
-        Self { sle: value }
+    fn from(sle: ConstSLE<'a>) -> ConstCFTokenPage<'a> {
+        ConstCFTokenPage { sle }
     }
 }
 
-impl ConstCFTokenPage {
-    pub fn new(sle: ConstSLE) -> Self {
+impl<'a> ConstCFTokenPage<'a> {
+    pub fn new(sle: ConstSLE<'a>) -> Self {
         ConstCFTokenPage { sle }
     }
 
-    pub fn get_tokens<'a>(&self) -> ConstCFTokens<'a> {
+    pub fn get_tokens(&'a self) -> ConstCFTokens<'a> {
         let st_array = self.sle.get_field_array(&SField::sf_cf_tokens());
         let mut tokens = vec![];
         for i in 0..st_array.size() {

@@ -111,7 +111,8 @@ impl Transactor for Payment {
                                     return tecFROZEN.into();
                                 }
 
-                                if cft_amount.value() > source_token.amount() {
+                                let source_token_amount = source_token.amount();
+                                if cft_amount.value() > source_token_amount {
                                     return tecUNFUNDED_PAYMENT.into();
                                 }
                             } else {
@@ -193,11 +194,12 @@ impl Transactor for Payment {
             //    No changes to Issuance needed
             let cft_amount: CFTAmount = amount.try_into().unwrap();
             let issuance_keylet = cftoken_issuance::keylet_from_currency(
-                &source_account_id,
+                cft_amount.issuer(),
                 cft_amount.asset_code(),
             );
 
-            // We can assume the issuance and destination tokens exist because we checked for them
+            println!("issuance keylet doApply: {:?}", issuance_keylet);
+            // We can assume the issuance and destination token exist because we checked for them
             // in preclaim, so it's fine to .unwrap() here.
             let mut issuance = ctx.view.peek_typed::<CFTokenIssuance>(&issuance_keylet).unwrap();
             let issuance_key = issuance_keylet.key.into();
