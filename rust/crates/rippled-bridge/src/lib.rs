@@ -182,7 +182,7 @@ pub mod rippled {
         pub fn getFieldBlob(self: &STObject, field: &SField) -> &'static STBlob;
         pub fn getFieldAmount(self: &STObject, field: &SField) -> &'static STAmount;
         pub fn getFieldArray(self: &STObject, field: &SField) -> &'static STArray;
-        pub fn peekFieldArray(object: SharedPtr<STObject>, field: &SField) -> UniquePtr<STArray>;
+        pub fn peekFieldArray<'a, 'b>(object: Pin<&'a mut SharedPtr<STObject>>, field: &SField) -> Pin<&'b mut STArray>;
         pub fn getPluginType(self: &STObject, field: &SField) -> &'static STPluginType;
 
         pub fn getSeqProxy(self: &STTx) -> SeqProxy;
@@ -193,7 +193,7 @@ pub mod rippled {
         pub fn setAccountID(sle: &SharedPtr<SLE>, field: &SField, v: &AccountID);
         pub fn setFieldAmountXRP(sle: &SharedPtr<SLE>, field: &SField, v: &XRPAmount);
         pub fn setPluginType(sle: &SharedPtr<SLE>, field: &SField, v: &STPluginType);
-        pub fn setFieldArray(sle: &SharedPtr<SLE>, field: &SField, v: UniquePtr<STArray>);
+        pub fn setFieldArray(sle: &SharedPtr<SLE>, field: &SField, v: &STArray);
         pub fn setFieldU8(sle: &SharedPtr<SLE>, field: &SField, v: u8);
         pub fn setFieldU16(sle: &SharedPtr<SLE>, field: &SField, v: u16);
         pub fn setFieldU32(sle: &SharedPtr<SLE>, field: &SField, v: u32);

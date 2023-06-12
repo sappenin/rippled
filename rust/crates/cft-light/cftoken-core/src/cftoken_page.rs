@@ -41,7 +41,6 @@ impl CFTokenPage {
             let issuance_id: Hash256 = obj.get_field_h256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28));
             println!("obj2. {:?}", issuance_id.as_ref());
             tokens.push(CFToken::from(obj));
-
         }
 
         if tokens.len() == 1 {

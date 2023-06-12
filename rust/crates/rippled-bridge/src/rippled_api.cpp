@@ -78,9 +78,9 @@ void setPluginType(
 void setFieldArray(
     std::shared_ptr<ripple::SLE>const& sle,
     ripple::SField const& field,
-    std::unique_ptr<ripple::STArray> value
+    ripple::STArray const& value
 ) {
-    sle->setFieldArray(field, *value);
+    sle->setFieldArray(field, value);
 }
 
 void setFieldU8(
@@ -278,7 +278,13 @@ std::unique_ptr<ripple::STObject> create_inner_object(ripple::SField const& fiel
     return std::make_unique<ripple::STObject>(*objectTemplate, field);
 }
 
+/*
 std::unique_ptr<ripple::STArray> peekFieldArray(std::shared_ptr<ripple::STObject> obj, ripple::SField const& field) {
     return std::make_unique<ripple::STArray>(obj->peekFieldArray(field));
+}
+*/
+
+ripple::STArray& peekFieldArray(std::shared_ptr<ripple::STObject>& obj, ripple::SField const& field) {
+    return obj->peekFieldArray(field);
 }
 

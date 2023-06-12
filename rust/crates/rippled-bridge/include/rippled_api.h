@@ -68,7 +68,7 @@ void setPluginType(
 void setFieldArray(
     std::shared_ptr<ripple::SLE>const& sle,
     ripple::SField const& field,
-    std::unique_ptr<ripple::STArray> value
+    ripple::STArray const&
     );
 
 void setFieldU8(
@@ -318,5 +318,6 @@ ripple::STObject& get_from_st_array(ripple::STArray& array, std::size_t index);
 
 std::unique_ptr<ripple::STObject> create_inner_object(ripple::SField const& field);
 
-std::unique_ptr<ripple::STArray> peekFieldArray(std::shared_ptr<ripple::STObject> obj, ripple::SField const& field);
+//std::unique_ptr<ripple::STArray> peekFieldArray(std::shared_ptr<ripple::STObject> obj, ripple::SField const& field);
+ripple::STArray& peekFieldArray(std::shared_ptr<ripple::STObject>& obj, ripple::SField const& field);
 #endif //PLUGIN_TRANSACTOR_BLOBSTORE_H

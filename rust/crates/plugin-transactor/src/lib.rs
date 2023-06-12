@@ -500,7 +500,7 @@ impl SLE {
     }
 
     pub fn peek_field_array(&self, field: &SField) -> STArray {
-        STArray::new(rippled_bridge::rippled::peekFieldArray(self.as_st_object(), field.instance))
+        STArray::new(rippled_bridge::rippled::peekFieldArray(Pin::new(&mut self.as_st_object()), field.instance))
     }
 
     pub fn make_field_absent(&self, field: &SField) {
@@ -560,7 +560,11 @@ impl SLE {
     }
 
     pub fn set_field_array(&mut self, field: &SField, value: STArray) {
-        rippled_bridge::rippled::setFieldArray(&self.instance, field.instance, value.instance)
+        match value {
+            STArray::UniquePtr(up) => rippled_bridge::rippled::setFieldArray(&self.instance, field.instance, up.deref()),
+            STArray::Pin(p) => rippled_bridge::rippled::setFieldArray(&self.instance, field.instance, &p)
+        }
+
     }
 
     pub fn is_field_present(&self, field: &SField) -> bool {
@@ -727,28 +731,37 @@ impl <'a>ConstSTArray<'a> {
     }
 }
 
-pub struct STArray {
-    instance: UniquePtr<rippled_bridge::rippled::STArray>,
+pub enum STArray<'a> {
+    UniquePtr(UniquePtr<rippled_bridge::rippled::STArray>),
+    Pin(Pin<&'a mut rippled_bridge::rippled::STArray>),
 }
 
-impl STArray {
-    pub fn new_empty() -> STArray {
-        STArray { instance: rippled_bridge::rippled::new_st_array() }
+impl <'a> STArray<'a> {
+    pub fn new_empty() -> STArray<'a> {
+        STArray::UniquePtr(rippled_bridge::rippled::new_st_array())
     }
 
-    pub fn new(instance: UniquePtr<rippled_bridge::rippled::STArray>) -> Self {
-        Self { instance }
+    // TODO Make this take a Pin
+    pub fn new(instance: Pin<&'a mut rippled_bridge::rippled::STArray>) -> STArray<'a> {
+        Self::Pin(instance)
     }
 
     pub fn size(&self) -> usize {
-        self.instance.size()
+        match self {
+            STArray::UniquePtr(up) => up.size(),
+            STArray::Pin(p) => p.deref().size()
+        }
     }
 
-    pub fn get<'a, 'b: 'a>(&'a mut self, index: usize) -> Option<STObject<'b>> {
+    pub fn get<'b, 'c>(&'c mut self, index: usize) -> Option<STObject<'b>> {
         if index > self.size() - 1 {
             None
         } else {
-            let obj: Pin<&mut rippled_bridge::rippled::STObject> = rippled_bridge::rippled::get_from_st_array(self.instance.pin_mut(), index);
+            let pinned_self = match self {
+                STArray::UniquePtr(up) => up.pin_mut(),
+                STArray::Pin(p) => p.as_mut()
+            };
+            let obj: Pin<&mut rippled_bridge::rippled::STObject> = rippled_bridge::rippled::get_from_st_array(pinned_self, index);
             let issuance_id: UInt256 = obj.deref().getFieldH256(&SField::get_plugin_field(SerializedTypeID::STI_UINT256, 28).instance);
             println!("obj. {:?}", issuance_id.data());
 
@@ -756,8 +769,12 @@ impl STArray {
         }
     }
 
-    pub fn push_back<'a, T: AsRef<STObject<'a>>>(&mut self, elem: &T) {
-        self.instance.pin_mut().push_back(&elem.as_ref().as_ref())
+    pub fn push_back<T: AsRef<STObject<'a>>>(&mut self, elem: &T) {
+        let pinned_self = match self {
+            STArray::UniquePtr(up) => up.pin_mut(),
+            STArray::Pin(p) => p.as_mut()
+        };
+        pinned_self.push_back(&elem.as_ref().as_ref())
     }
 }
 
