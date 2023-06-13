@@ -22,7 +22,6 @@
 #include <ripple/app/tx/impl/ApplyHandler.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
-#include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
@@ -98,7 +97,6 @@ transactor_helper(std::string pathToLib)
 };
 
 std::map<std::uint16_t, TransactorWrapper> transactorMap{
-    {0, transactor_helper_with_consequences<Payment>()},
     {3, transactor_helper_with_consequences<SetAccount>()},
     {5, transactor_helper<SetRegularKey>()},
     {12, transactor_helper<SetSignerList>()},

@@ -421,7 +421,6 @@ target_sources (rippled PRIVATE
         src/ripple/app/rdb/impl/Wallet.cpp
         src/ripple/app/tx/impl/Change.cpp
         src/ripple/app/tx/impl/DeleteAccount.cpp
-        src/ripple/app/tx/impl/Payment.cpp
         src/ripple/app/tx/impl/SetAccount.cpp
         src/ripple/app/tx/impl/SetRegularKey.cpp
         src/ripple/app/tx/impl/SetSignerList.cpp

@@ -316,7 +316,7 @@ static TT_ONCE: OnceCell<CString> = OnceCell::new();
 #[no_mangle]
 pub unsafe fn getTxName() -> *const i8 {
     let c_string = NAME_ONCE.get_or_init(|| {
-        CString::new("Payment2").unwrap()
+        CString::new("Payment").unwrap()
     });
     let ptr = c_string.as_ptr();
     ptr
@@ -325,7 +325,7 @@ pub unsafe fn getTxName() -> *const i8 {
 #[no_mangle]
 pub unsafe fn getTTName() -> *const i8 {
     let c_string = TT_ONCE.get_or_init(|| {
-        CString::new("ttPAYMENT_2").unwrap()
+        CString::new("ttPAYMENT").unwrap()
     });
     let ptr = c_string.as_ptr();
     ptr

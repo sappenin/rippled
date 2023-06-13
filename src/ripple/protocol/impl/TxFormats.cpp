@@ -40,7 +40,6 @@ struct TxFormatsWrapper
 };
 
 std::map<std::string, std::uint16_t> txTypes{
-    {"ttPAYMENT", 0},
     {"ttACCOUNT_SET", 3},
     {"ttREGULAR_KEY_SET", 5},
     {"ttSIGNER_LIST_SET", 12},
@@ -105,15 +104,6 @@ std::initializer_list<TxFormatsWrapper> txFormatsList{
      getTxTypeFromName("ttREGULAR_KEY_SET"),
      {
          {sfRegularKey, soeOPTIONAL},
-     },
-     commonFields},
-    {jss::Payment,
-     getTxTypeFromName("ttPAYMENT"),
-     {
-         {sfDestination, soeREQUIRED},
-         {sfAmount, soeREQUIRED},
-         {sfInvoiceID, soeOPTIONAL},
-         {sfDestinationTag, soeOPTIONAL},
      },
      commonFields},
     {jss::EnableAmendment,
