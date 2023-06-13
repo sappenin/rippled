@@ -24,7 +24,7 @@ impl<'a> ConstCFTokenPage<'a> {
         ConstCFTokenPage { sle }
     }
 
-    pub fn get_tokens(&'a self) -> ConstCFTokens<'a> {
+    pub fn get_tokens(&self) -> ConstCFTokens<'a> {
         let st_array = self.sle.get_field_array(&SField::sf_cf_tokens());
         let mut tokens = vec![];
         for i in 0..st_array.size() {
