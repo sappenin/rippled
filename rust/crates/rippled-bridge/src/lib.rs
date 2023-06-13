@@ -679,7 +679,7 @@ impl KeyletBuilder {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, PartialOrd, Ord, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialOrd, Ord, Eq, PartialEq)]
 pub struct Keylet {
     pub key: UInt256,
     pub r#type: i16,
@@ -837,7 +837,7 @@ unsafe impl cxx::ExternType for UInt160 {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct UInt256 {
     data: [u8; 32]
 }

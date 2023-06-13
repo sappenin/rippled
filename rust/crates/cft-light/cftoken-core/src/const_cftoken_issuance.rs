@@ -4,21 +4,23 @@ use plugin_transactor::transactor::{ConstLedgerObject, LedgerObject};
 use rippled_bridge::Keylet;
 use crate::{CFTokenFields};
 
-pub struct ConstCFTokenIssuance<'a> {
-    sle: ConstSLE<'a>,
+pub struct ConstCFTokenIssuance {
+    sle: ConstSLE,
 }
 
-impl<'a> ConstLedgerObject<'a> for ConstCFTokenIssuance<'a> {
-    fn get_sle(&self) -> &ConstSLE<'a> {
+impl From<ConstSLE> for ConstCFTokenIssuance {
+    fn from(value: ConstSLE) -> Self {
+        Self { sle: value }
+    }
+}
+
+impl ConstLedgerObject for ConstCFTokenIssuance {
+    fn get_sle(&self) -> &ConstSLE {
         &self.sle
     }
-
-    fn from(sle: ConstSLE<'a>) -> ConstCFTokenIssuance<'a> {
-        Self { sle }
-    }
 }
 
-impl<'a> ConstCFTokenIssuance<'a> {
+impl ConstCFTokenIssuance {
     pub fn is_frozen(&self) -> bool {
         // TODO: Once we implement issuance freezing, check if flag is set
         false

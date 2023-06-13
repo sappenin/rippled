@@ -4,7 +4,6 @@ pub mod transactor;
 
 use core::slice;
 use std::cmp::Ordering;
-use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use cxx::{CxxVector, SharedPtr, UniquePtr};
@@ -304,7 +303,7 @@ impl<'a> ReadView<'a> {
         }
     }
 
-    pub fn read_typed<T: ConstLedgerObject<'a>>(&'a self, key: &Keylet) -> Option<T> {
+    pub fn read_typed<T: ConstLedgerObject>(&self, key: &Keylet) -> Option<T> {
         self.read(key)
             .map(|sle| T::from(sle))
     }
@@ -425,14 +424,13 @@ impl AsRef<[u8]> for STBlob<'_> {
     }
 }
 
-pub struct ConstSLE<'a> {
+pub struct ConstSLE {
     instance: SharedPtr<rippled_bridge::rippled::ConstSLE>,
-    phantom_data: PhantomData<&'a rippled_bridge::rippled::ConstSLE>
 }
 
-impl<'a> ConstSLE<'a> {
+impl ConstSLE {
     pub fn new(instance: SharedPtr<rippled_bridge::rippled::ConstSLE>) -> Self {
-        ConstSLE { instance, phantom_data: PhantomData }
+        ConstSLE { instance }
     }
 
     pub fn get_account_id(&self, field: &SField) -> AccountId {
@@ -447,11 +445,11 @@ impl<'a> ConstSLE<'a> {
         self.as_st_object().deref().getFieldU64(field.instance)
     }
 
-    pub fn get_field_amount(&self, field: &SField) -> STAmount<'a> {
+    pub fn get_field_amount(&self, field: &SField) -> STAmount {
         STAmount::new(self.as_st_object().deref().getFieldAmount(field.instance))
     }
 
-    pub fn get_field_array(&self, field: &SField) -> ConstSTArray<'a> {
+    pub fn get_field_array(&self, field: &SField) -> ConstSTArray {
         ConstSTArray::new(self.as_st_object().getFieldArray(field.instance))
     }
 
