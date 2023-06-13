@@ -88,12 +88,12 @@ impl Transactor for Payment {
                             return tecFROZEN.into();
                         }
 
-                        if let Some(dest_token) = cftoken_utils::find_token(
+                        if let Some(dest_token) = cftoken_utils::find_token_in_read_view(
                             &ctx.view,
                             &dest_account,
                             &issuance_keylet.key.into(),
                         ) {
-                            if dest_token.is_frozen() {
+                            if dest_token.0.is_frozen() {
                                 return tecFROZEN.into();
                             }
                         } else {
@@ -102,16 +102,16 @@ impl Transactor for Payment {
                         }
 
                         if source_account_id != issuance.issuer() {
-                            if let Some(source_token) = cftoken_utils::find_token(
+                            if let Some(source_token) = cftoken_utils::find_token_in_read_view(
                                 &ctx.view,
                                 &source_account_id,
                                 &issuance_keylet.key.into(),
                             ) {
-                                if source_token.is_frozen() {
+                                if source_token.0.is_frozen() {
                                     return tecFROZEN.into();
                                 }
 
-                                if cft_amount.value() > source_token.amount() {
+                                if cft_amount.value() > source_token.0.amount() {
                                     return tecUNFUNDED_PAYMENT.into();
                                 }
                             } else {
@@ -193,7 +193,7 @@ impl Transactor for Payment {
             //    No changes to Issuance needed
             let cft_amount: CFTAmount = amount.try_into().unwrap();
             let issuance_keylet = cftoken_issuance::keylet_from_currency(
-                &source_account_id,
+                cft_amount.issuer(),
                 cft_amount.asset_code(),
             );
 
@@ -201,7 +201,7 @@ impl Transactor for Payment {
             // in preclaim, so it's fine to .unwrap() here.
             let mut issuance = ctx.view.peek_typed::<CFTokenIssuance>(&issuance_keylet).unwrap();
             let issuance_key = issuance_keylet.key.into();
-            let mut dest_token_and_page = cftoken_utils::find_token_and_page(
+            let mut dest_token_and_page = cftoken_utils::find_token_in_apply_view(
                 &mut ctx.view,
                 &dest_account_id,
                 &issuance_key,
@@ -215,7 +215,7 @@ impl Transactor for Payment {
                 issuance = issuance.set_outstanding_amount(outstanding_amount + cft_amount.value());
                 ctx.view.update_object(&issuance);
             } else {
-                let mut source_token_and_page = cftoken_utils::find_token_and_page(
+                let mut source_token_and_page = cftoken_utils::find_token_in_apply_view(
                     &mut ctx.view,
                     &source_account_id,
                     &issuance_key,

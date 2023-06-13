@@ -238,7 +238,7 @@ pub fn insert_token<'a>(
 
 // TODO: Maybe implement removeToken if we end up allowing CFToken deletion
 
-pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<ConstCFToken<'a>> {
+pub fn find_token_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(ConstCFToken<'a>, ConstCFTokenPage)> {
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_read_view
     // will be None if this is the case.
     locate_page_in_read_view(view, owner, issuance_id)
@@ -246,6 +246,7 @@ pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a
             // We found a candidate page, but the given CFT may not be in it.
             page.get_tokens().tokens.into_iter()
                 .find(|token| &token.token_id() == issuance_id)
+                .map(|found| (found, page))
         ).flatten()
 }
 
@@ -255,7 +256,7 @@ pub fn find_token<'a>(view: &'a ReadView, owner: &'a AccountId, issuance_id: &'a
 // function. If the lifetime of the &mut ApplyView is the same as the lifetime of the CFToken's
 // internal reference, then assumes we need to keep the &mut ApplyView as long as the CFToken is
 // in use -- therefore, we disentangle the lifetimes of the &mut ApplyView and the CFToken<'a>
-pub fn find_token_and_page<'b, 'a>(view: &'b mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken<'a>, CFTokenPage)> {
+pub fn find_token_in_apply_view<'b, 'a>(view: &'b mut ApplyView, owner: &'a AccountId, issuance_id: &'a CFTokenID) -> Option<(CFToken<'a>, CFTokenPage)> {
     // If the page couldn't be found, the given CFT isn't owned by this account. locate_page_in_apply_view
     // will be None if this is the case.
     locate_page_in_apply_view(view, owner, issuance_id)
