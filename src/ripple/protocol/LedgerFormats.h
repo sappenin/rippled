@@ -192,6 +192,19 @@ enum LedgerEntryType : std::uint16_t
     */
     ltDID = 0x0049,
 
+    /** A ledger object representing an individual Ballot asset type.
+      *  \sa keylet::ballot
+     */
+    ltBALLOT = 0x0080,
+
+//    ltBALLOT_CHOICE = 0x0081,
+
+//    ltBALLOT_VOTE = 0x0082,
+
+//    ltBALLOT_VOTE_CHOICE = 0x0083,
+
+//    ltBALLOT_VOTE_PAGE = 0x0084,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

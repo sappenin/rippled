@@ -354,6 +354,29 @@ public:
         beast::Journal const&);
 };
 
+class ValidBallotCreate {
+        std::uint32_t ballotsCreated_ = 0;
+        std::uint32_t ballotsDeleted_ = 0;
+
+//        std::uint32_t cftokensCreated_ = 0;
+//        std::uint32_t cftokensDeleted_ = 0;
+
+    public:
+        void
+        visitEntry(
+                bool,
+                std::shared_ptr<SLE const> const &,
+                std::shared_ptr<SLE const> const &);
+
+        bool
+        finalize(
+                STTx const &,
+                TER const,
+                XRPAmount const,
+                ReadView const &,
+                beast::Journal const &);
+    };
+
 /**
  * @brief Invariant: Validates counts of NFTokens after all transaction types.
  *
@@ -432,7 +455,9 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidClawback>;
+    ValidClawback,
+    ValidBallotCreate
+    >;
 
 /**
  * @brief get a tuple of all invariant checks

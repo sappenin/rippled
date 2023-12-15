@@ -333,12 +333,32 @@ LedgerFormats::LedgerFormats()
             {sfAccount,              soeREQUIRED},
             {sfDIDDocument,          soeOPTIONAL},
             {sfURI,                  soeOPTIONAL},
-            {sfData,          soeOPTIONAL},
+            {sfData,                 soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
+
+    add(jss::Ballot,
+        ltBALLOT,
+        {
+                {sfAccount,             soeREQUIRED},
+                {sfInitialVotes,        soeREQUIRED},
+                {sfBallotChoiceIDs,     soeREQUIRED},
+                {sfOpenTime,            soeOPTIONAL},
+                {sfCloseTime,           soeOPTIONAL},
+                {sfLockedAmount,        soeOPTIONAL},
+                {sfBallotDocumentHash,  soeOPTIONAL},
+                {sfBallotDocumentURI,   soeOPTIONAL},
+                {sfMembershipNFTIssuer, soeOPTIONAL},
+                {sfMembershipNFTTaxon,  soeOPTIONAL},
+                {sfOwnerNode,           soeREQUIRED},
+                {sfPreviousTxnID,       soeREQUIRED},
+                {sfPreviousTxnLgrSeq,   soeREQUIRED}
+        },
+        commonFields);
+
     // clang-format on
 }
 

@@ -392,6 +392,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CLAIM_ID:
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
+            case ltBALLOT:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -798,5 +799,111 @@ ValidClawback::finalize(
 
     return true;
 }
+
+
+    void
+    ValidBallotCreate::visitEntry(
+            bool isDelete,
+            std::shared_ptr<SLE const> const &before,
+            std::shared_ptr<SLE const> const &after
+    ) {
+        if (after && after->getType() == ltBALLOT) {
+            if (isDelete)
+                ballotsDeleted_++;
+            else if (!before)
+                ballotsCreated_++;
+        }
+
+
+        // TODO: Update this for BallotVotes
+
+//        if (after && after->getType() == ltCFTOKEN)
+//        {
+//            if (isDelete)
+//                cftokensDeleted_++;
+//            else if (!before)
+//                cftokensCreated_++;
+//        }
+    }
+
+    bool
+    ValidBallotCreate::finalize(
+            STTx const &tx,
+            TER const result,
+            XRPAmount const _fee,
+            ReadView const &_view,
+            beast::Journal const &j
+    ) {
+        if (tx.getTxnType() == ttBALLOT_CREATE && result == tesSUCCESS) {
+            if (ballotsCreated_ == 0) {
+                JLOG(j.fatal()) << "Invariant failed: Ballot creation "
+                                   "succeeded without creating a Ballot";
+            } else if (ballotsDeleted_ != 0) {
+                JLOG(j.fatal()) << "Invariant failed: Ballot creation "
+                                   "succeeded while removing Ballots";
+            } else if (ballotsCreated_ > 1) {
+                JLOG(j.fatal()) << "Invariant failed: Ballot creation "
+                                   "succeeded but created multiple issuances";
+            }
+
+            return ballotsCreated_ == 1 && ballotsDeleted_ == 0;
+        }
+
+        // TODO: FIXME
+//        if (tx.getTxnType() == ttBALLOT_DELETE && result == tesSUCCESS) {
+//            if (ballotsDeleted_ == 0) {
+//                JLOG(j.fatal()) << "Invariant failed: Ballot deletion "
+//                                   "succeeded without removing a Ballot";
+//            } else if (ballotsCreated_ > 0) {
+//                JLOG(j.fatal()) << "Invariant failed: Ballot deletion "
+//                                   "succeeded while creating Ballots";
+//            } else if (ballotsDeleted_ > 1) {
+//                JLOG(j.fatal()) << "Invariant failed: Ballot deletion "
+//                                   "succeeded but deleted multiple issuances";
+//            }
+//
+//            return ballotsCreated_ == 0 && ballotsDeleted_ == 1;
+//        }
+
+  // TODO: FIXME for Vote
+//        if (tx.getTxnType() == ttCFTOKEN_AUTHORIZE && result == tesSUCCESS) {
+//            bool const submittedByIssuer = tx.isFieldPresent(sfCFTokenHolder);
+//
+//            if (ballotsCreated_ > 0) {
+//                JLOG(j.fatal()) << "Invariant failed: CFT authorize "
+//                                   "succeeded but created Ballots";
+//                return false;
+//            } else if (ballotsDeleted_ > 0) {
+//                JLOG(j.fatal()) << "Invariant failed: CFT authorize "
+//                                   "succeeded but deleted issuances";
+//                return false;
+//            } else if (
+//                    submittedByIssuer && (cftokensCreated_ > 0 || cftokensDeleted_ > 0)) {
+//                JLOG(j.fatal())
+//                    << "Invariant failed: CFT authorize submitted by issuer "
+//                       "succeeded but created/deleted cftokens";
+//                return false;
+//            } else if (
+//                    !submittedByIssuer && (cftokensCreated_ + cftokensDeleted_ != 1)) {
+//                // if the holder submitted this tx, then a cftoken must be either
+//                // created or deleted.
+//                JLOG(j.fatal())
+//                    << "Invariant failed: CFT authorize submitted by holder "
+//                       "succeeded but created/deleted bad number of cftokens";
+//                return false;
+//            }
+//
+//            return true;
+//        }
+
+        if (ballotsCreated_ != 0) {
+            JLOG(j.fatal()) << "Invariant failed: a Ballot was created";
+        } else if (ballotsDeleted_ != 0) {
+            JLOG(j.fatal()) << "Invariant failed: a Ballot was deleted";
+        }
+
+        return ballotsCreated_ == 0 && ballotsDeleted_ == 0;
+//        && cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+    }
 
 }  // namespace ripple

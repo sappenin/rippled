@@ -517,6 +517,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Change.cpp
   src/ripple/app/tx/impl/Clawback.cpp
   src/ripple/app/tx/impl/CreateCheck.cpp
+  src/ripple/app/tx/impl/BallotCreate.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
@@ -782,6 +783,7 @@ if (tests)
     src/test/app/AMM_test.cpp
     src/test/app/AMMCalc_test.cpp
     src/test/app/AMMExtended_test.cpp
+    src/test/app/Ballot_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp
@@ -930,6 +932,7 @@ if (tests)
     src/test/jtx/impl/Account.cpp
     src/test/jtx/impl/AMM.cpp
     src/test/jtx/impl/AMMTest.cpp
+    src/test/jtx/impl/ballot.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/TestHelpers.cpp

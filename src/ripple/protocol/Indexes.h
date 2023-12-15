@@ -283,6 +283,18 @@ xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 Keylet
 did(AccountID const& account) noexcept;
 
+Keylet
+ballot(AccountID id, std::uint32_t seq) noexcept;
+
+Keylet
+ballot(ripple::base_uint<160ul, ripple::detail::AccountIDTag>, std::uint32_t) noexcept;
+
+//inline Keylet
+//ballot(uint256 const& ballotId)
+//{
+//    return {ltBALLOT, ballotId};
+//}
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

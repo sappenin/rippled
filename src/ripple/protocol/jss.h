@@ -62,6 +62,10 @@ JSS(Asset);                // in: AMM Asset1
 JSS(Asset2);               // in: AMM Asset2
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
+JSS(Ballot);               // ledger type.
+JSS(BallotCreate);         // transaction type
+JSS(BallotDelete);         // transaction type
+JSS(BallotVote);           // transaction type
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.

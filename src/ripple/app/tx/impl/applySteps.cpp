@@ -25,6 +25,9 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/BallotCreate.h>
+//#include <ripple/app/tx/impl/BallotDelete.h>
+//#include <ripple/app/tx/impl/BallotVote.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -159,6 +162,12 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<DIDSet>();
         case ttDID_DELETE:
             return f.template operator()<DIDDelete>();
+        case ttBALLOT_CREATE:
+            return f.template operator()<BallotCreate>();
+//        case ttBALLOT_DELETE:
+//            return f.template operator()<BallotDelete>();
+//        case ttBALLOT_VOTE:
+//            return f.template operator()<BallotVote>();
         default:
             throw UnknownTxnType(txnType);
     }

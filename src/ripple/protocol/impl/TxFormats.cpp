@@ -483,6 +483,38 @@ TxFormats::TxFormats()
         commonFields);
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
+
+
+    add(jss::BallotCreate,
+        ttBALLOT_CREATE,
+        {
+                {sfInitialVotes, soeREQUIRED},
+                {sfBallotChoiceIDs, soeREQUIRED},
+                {sfOpenTime, soeOPTIONAL},
+                {sfCloseTime, soeOPTIONAL},
+                {sfMembershipNFTIssuer, soeOPTIONAL},
+                {sfMembershipNFTTaxon, soeOPTIONAL},
+                {sfBallotDocumentHash, soeOPTIONAL},
+                {sfBallotDocumentURI, soeOPTIONAL},
+        },
+        commonFields);
+//    add(jss::BallotDelete,
+//        ttBALLOT_DELETE,
+//        {
+//                {sfBallotID, soeREQUIRED},
+//        },
+//        commonFields);
+//
+//    add(jss::BallotVote,
+//        ttBALLOT_VOTE,
+//        {
+//                {sfBallotID, soeREQUIRED},
+//                {sfBallotChoices, soeREQUIRED},
+//        },
+//        commonFields);
+
+
+
 }
 
 TxFormats const&

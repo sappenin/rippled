@@ -72,6 +72,8 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CLAIM_ID = 'Q',
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
+    BALLOT = 'b',
+//    BALLOT_VOTE = '',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -443,6 +445,21 @@ did(AccountID const& account) noexcept
 {
     return {ltDID, indexHash(LedgerNameSpace::DID, account)};
 }
+
+Keylet
+ballot(ripple::base_uint<160ul, ripple::detail::AccountIDTag> id, std::uint32_t seq) noexcept{
+    return {ltBALLOT, indexHash(LedgerNameSpace::BALLOT, id, seq)};
+}
+
+Keylet
+ballot(AccountID const &id, std::uint32_t seq) noexcept {
+    return {ltBALLOT,indexHash(LedgerNameSpace::BALLOT, id, seq)};
+}
+
+//Keylet
+//vote(uint256 const &ballotID, AccountID const &voter) noexcept {
+//    return {ltBALLOT, indexHash(LedgerNameSpace::BALLOT, ballotID, voter)};
+//}
 
 }  // namespace keylet
 

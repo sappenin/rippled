@@ -164,6 +164,9 @@ CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32, 
 // 47 is reserved for LockCount(Hooks)
 CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
+CONSTRUCT_TYPED_SFIELD(sfInitialVotes,          "InitialVotes",         UINT32,    51);
+CONSTRUCT_TYPED_SFIELD(sfOpenTime,              "OpenTime",             UINT32,    52);
+CONSTRUCT_TYPED_SFIELD(sfMembershipNFTTaxon,    "MembershipNFTTaxon",   UINT32,    53);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -188,6 +191,7 @@ CONSTRUCT_TYPED_SFIELD(sfReferenceCount,           "ReferenceCount",           U
 CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            UINT64, 20);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
+CONSTRUCT_TYPED_SFIELD(sfLockedAmount,             "LockedAmount",             UINT64, 23);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -213,6 +217,7 @@ CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,
 CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
 CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
 CONSTRUCT_TYPED_SFIELD(sfAMMID,                 "AMMID",                UINT256,   14);
+CONSTRUCT_TYPED_SFIELD(sfBallotID,               "BallotID",            UINT256,   15);
 
 // 256-bit (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        UINT256,   16);
@@ -233,6 +238,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
+CONSTRUCT_TYPED_SFIELD(sfBallotDocumentHash,    "BallotDocumentHash",   UINT256,   34);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
@@ -300,6 +306,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,     
 CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
 CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,        26);
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
+CONSTRUCT_TYPED_SFIELD(sfBallotDocumentURI,     "BallotDocumentURI",    VL,        28);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -321,12 +328,14 @@ CONSTRUCT_TYPED_SFIELD(sfAttestationSignerAccount, "AttestationSignerAccount", A
 CONSTRUCT_TYPED_SFIELD(sfAttestationRewardAccount, "AttestationRewardAccount", ACCOUNT, 21);
 CONSTRUCT_TYPED_SFIELD(sfLockingChainDoor,      "LockingChainDoor",     ACCOUNT,   22);
 CONSTRUCT_TYPED_SFIELD(sfIssuingChainDoor,      "IssuingChainDoor",     ACCOUNT,   23);
+CONSTRUCT_TYPED_SFIELD(sfMembershipNFTIssuer,   "MembershipNFTIssuer",  ACCOUNT,   24);
 
 // vector of 256-bit
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
+CONSTRUCT_TYPED_SFIELD(sfBallotChoiceIDs,       "BallotChoiceIDs",      VECTOR256,  5);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
@@ -406,8 +415,11 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestations,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
                                                  "XChainCreateAccountAttestations",
                                                                         ARRAY,     22);
-// 23 and 24 are unused and available for use
+CONSTRUCT_UNTYPED_SFIELD(sfBallotChoices,        "BallotChoices",       ARRAY,     23);
+// 24 is unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
+
+
 
 // clang-format on
 

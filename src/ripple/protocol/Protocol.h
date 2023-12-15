@@ -95,6 +95,12 @@ std::size_t constexpr maxDIDAttestationLength = 256;
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
+/** The maximum length of DocumentURI in a Ballot */
+std::size_t constexpr maxBallotChoiceIDsLength = 20;
+
+/** The maximum length of DocumentURI in a Ballot */
+std::size_t constexpr maxBallotDocumentUriLength = 256;
+
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 

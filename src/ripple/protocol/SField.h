@@ -435,6 +435,9 @@ extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
 extern SF_UINT32 const sfVoteWeight;
 extern SF_UINT32 const sfFirstNFTokenSequence;
+extern SF_UINT32 const sfInitialVotes;
+extern SF_UINT32 const sfOpenTime;
+extern SF_UINT32 const sfMembershipNFTTaxon;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -459,6 +462,7 @@ extern SF_UINT64 const sfReferenceCount;
 extern SF_UINT64 const sfXChainClaimID;
 extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
+extern SF_UINT64 const sfLockedAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -484,6 +488,7 @@ extern SF_UINT256 const sfEmitParentTxnID;
 extern SF_UINT256 const sfEmitNonce;
 extern SF_UINT256 const sfEmitHookHash;
 extern SF_UINT256 const sfAMMID;
+extern SF_UINT256 const sfBallotID;
 
 // 256-bit (uncommon)
 extern SF_UINT256 const sfBookDirectory;
@@ -503,6 +508,7 @@ extern SF_UINT256 const sfHookStateKey;
 extern SF_UINT256 const sfHookHash;
 extern SF_UINT256 const sfHookNamespace;
 extern SF_UINT256 const sfHookSetTxnID;
+extern SF_UINT256 const sfBallotDocumentHash;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
@@ -566,6 +572,7 @@ extern SF_VL const sfHookStateData;
 extern SF_VL const sfHookReturnString;
 extern SF_VL const sfHookParameterName;
 extern SF_VL const sfHookParameterValue;
+extern SF_VL const sfBallotDocumentURI;
 
 // account
 extern SF_ACCOUNT const sfAccount;
@@ -586,6 +593,7 @@ extern SF_ACCOUNT const sfAttestationSignerAccount;
 extern SF_ACCOUNT const sfAttestationRewardAccount;
 extern SF_ACCOUNT const sfLockingChainDoor;
 extern SF_ACCOUNT const sfIssuingChainDoor;
+extern SF_ACCOUNT const sfMembershipNFTIssuer;
 
 // path set
 extern SField const sfPaths;
@@ -604,6 +612,7 @@ extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
 extern SF_VECTOR256 const sfAmendments;
 extern SF_VECTOR256 const sfNFTokenOffers;
+extern SF_VECTOR256 const sfBallotChoiceIDs;
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -651,6 +660,7 @@ extern SField const sfNFTokens;
 extern SField const sfHooks;
 extern SField const sfVoteSlots;
 extern SField const sfAuthAccounts;
+extern SField const sfBallotChoices;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

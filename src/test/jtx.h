@@ -24,6 +24,7 @@
 
 #include <ripple/json/to_string.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/ballot.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
