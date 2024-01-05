@@ -7,9 +7,12 @@ members = [
     "crates/cft-light/cftoken-core",
     "crates/cft-light/cftoken_issuance_create",
     "crates/cft-light/payment",
-    "crates/cft-light/cftoken_create"
+    "crates/cft-light/cftoken_create",
+    "crates/perf-testing/xrp_to_xrp",
+    "crates/perf-testing/cft_to_cft",
 ]
 
 [workspace.dependencies]
 xrpl-rust-sdk-core = { path = "../../xrpl-rust-sdk/xrpl-rust-sdk-core" }
+xrpl-rust-sdk-client = { path = "../../xrpl-rust-sdk/xrpl-rust-sdk-client" }
 #xrpl-rust-sdk-core = {path = "../../../../github/xpring-eng/xrpl-rust-sdk/xrpl-rust-sdk-core"}

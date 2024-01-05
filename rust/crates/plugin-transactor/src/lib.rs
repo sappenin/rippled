@@ -926,7 +926,7 @@ impl TxConsequences {
         TxConsequences {
             inner: rippled_bridge::tx_consequences::TxConsequences::new(
                 false,
-                if fee.negative() { fee.xrp().into() } else { XRPAmount::zero() },
+                if !fee.negative() { fee.xrp().into() } else { XRPAmount::zero() },
                 potential_spend.into(),
                 tx.seq_proxy(),
                 1

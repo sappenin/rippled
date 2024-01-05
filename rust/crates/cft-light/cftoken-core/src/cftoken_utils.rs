@@ -25,7 +25,6 @@ fn locate_page_in_read_view<'a>(view: &'a ReadView, owner: &'a AccountId, issuan
     // greater than `first`, so look for that, up until the maximum possible
     // page.
     let key = view.succ(&first, &last.next()).unwrap_or(last.key);
-    println!("page key on lookup: {}", hex::encode_upper(&key.data()));
     view.read_typed(&Keylet::new(
         CFTOKEN_PAGE_TYPE as i16,
         key

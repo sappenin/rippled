@@ -155,7 +155,7 @@ pub fn doApply(mut ctx: Pin<&mut rippled::ApplyContext>, mPriorBalance: rippled:
 
 #[no_mangle]
 pub fn getTxType() -> u16 {
-    32
+    25
 }
 
 static FIELD_NAMES_ONCE: OnceCell<Vec<CString>> = OnceCell::new();

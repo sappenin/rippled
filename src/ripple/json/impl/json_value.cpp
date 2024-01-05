@@ -958,7 +958,10 @@ Value::getMemberNames() const
     ObjectValues::const_iterator itEnd = value_.map_->end();
 
     for (; it != itEnd; ++it)
-        members.push_back(std::string((*it).first.c_str()));
+    {
+        const char* string = (*it).first.c_str();
+        members.push_back(std::string(string));
+    }
 
     return members;
 }
