@@ -122,6 +122,23 @@ class CollectorRef
 
         virtual void
         on(PeerID node, tp when, FullyValidateLedger const&) = 0;
+
+        // H-Cpp-4: new event types for the conformance harness.
+        // Default no-op so existing collectors don't need to be updated.
+        virtual void
+        on(PeerID, tp, Propose const&) {}
+
+        virtual void
+        on(PeerID, tp, PeerProposalReceived const&) {}
+
+        virtual void
+        on(PeerID, tp, TxSetReceived const&) {}
+
+        virtual void
+        on(PeerID, tp, ModeChange const&) {}
+
+        virtual void
+        on(PeerID, tp, BowOut const&) {}
     };
 
     // Bridge between type-ful collector T and type erased instance
@@ -268,6 +285,43 @@ class CollectorRef
         on(PeerID node, tp when, FullyValidateLedger const& e) override
         {
             t_.on(node, when, e);
+        }
+
+        // H-Cpp-4 new events: forward only if T has the matching overload so
+        // that existing collectors that don't handle these events still compile.
+        void
+        on(PeerID node, tp when, Propose const& e) override
+        {
+            if constexpr (requires { t_.on(node, when, e); })
+                t_.on(node, when, e);
+        }
+
+        void
+        on(PeerID node, tp when, PeerProposalReceived const& e) override
+        {
+            if constexpr (requires { t_.on(node, when, e); })
+                t_.on(node, when, e);
+        }
+
+        void
+        on(PeerID node, tp when, TxSetReceived const& e) override
+        {
+            if constexpr (requires { t_.on(node, when, e); })
+                t_.on(node, when, e);
+        }
+
+        void
+        on(PeerID node, tp when, ModeChange const& e) override
+        {
+            if constexpr (requires { t_.on(node, when, e); })
+                t_.on(node, when, e);
+        }
+
+        void
+        on(PeerID node, tp when, BowOut const& e) override
+        {
+            if constexpr (requires { t_.on(node, when, e); })
+                t_.on(node, when, e);
         }
     };
 

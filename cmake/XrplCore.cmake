@@ -293,11 +293,38 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        # conformance_runner.cpp is the entry point of the standalone
+        # rippled-conformance binary (defined below); it is not a unit test
+        # and provides its own main(), so it must not be built into xrpld.
+        list(FILTER sources EXCLUDE REGEX "/conformance_runner\\.cpp$")
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
     target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
     exclude_if_included(xrpld)
+
+    # rippled-conformance: conformance harness runner (Track B)
+    #
+    # Only csf/impl/*.cpp is non-test implementation glue for the CSF
+    # (Consensus Simulation Framework) types used by the harness. The other
+    # csf/*.cpp files (BasicNetwork.cpp, Digraph.cpp, Histogram.cpp,
+    # Scheduler.cpp) are GoogleTest unit tests for those types and must not
+    # be linked into this binary.
+    file(
+        GLOB rippled_conformance_csf_sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl/csf/impl/*.cpp"
+    )
+    add_executable(rippled-conformance
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/test/conformance_runner.cpp
+        ${rippled_conformance_csf_sources}
+    )
+    target_include_directories(rippled-conformance
+        PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl>
+    )
+    target_link_libraries(
+        rippled-conformance Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl
+    )
     # define a macro for tests that might need to
     # be excluded or run differently in CI environment
     if(is_ci)

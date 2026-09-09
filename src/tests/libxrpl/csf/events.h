@@ -1,8 +1,14 @@
 #pragma once
 
+#include <csf/Proposal.h>
 #include <csf/Tx.h>
 #include <csf/Validation.h>
 #include <csf/ledgers.h>
+
+#include <xrpl/consensus/ConsensusTypes.h>
+
+#include <chrono>
+#include <cstdint>
 
 namespace xrpl::test::csf {
 
@@ -152,6 +158,52 @@ struct FullyValidateLedger
      * This is a jump if prior.id() != ledger.parentID()
      */
     Ledger prior;
+};
+
+// ── New event types added for the conformance harness (H-Cpp-4) ──────────────
+
+//! Peer emitted a proposal to peers
+struct Propose
+{
+    //! The proposal that was sent
+    Proposal proposal;
+};
+
+//! Peer received a proposal from another peer
+struct PeerProposalReceived
+{
+    //! Peer the proposal came from
+    PeerID from;
+
+    //! The received proposal
+    Proposal proposal;
+};
+
+//! Peer acquired a tx set it previously referenced by ID
+struct TxSetReceived
+{
+    //! ID of the acquired tx set
+    TxSet::ID id;
+
+    //! Number of transactions in the set
+    std::size_t size;
+};
+
+//! Peer's consensus mode changed
+struct ModeChange
+{
+    //! Previous mode
+    ConsensusMode from;
+
+    //! New mode
+    ConsensusMode to;
+};
+
+//! Peer bowed out of consensus (emitted kSEQ_LEAVE proposal)
+struct BowOut
+{
+    //! The bow-out propose_seq value (kSEQ_LEAVE = 0xFFFFFFFF)
+    std::uint32_t seq;
 };
 
 }  // namespace xrpl::test::csf

@@ -21,6 +21,7 @@
 #include <csf/Proposal.h>
 #include <csf/Scheduler.h>
 #include <csf/SimTime.h>
+#include <csf/TraceCollector.h>
 #include <csf/TrustGraph.h>
 #include <csf/Tx.h>
 #include <csf/Validation.h>
@@ -312,6 +313,10 @@ struct Peer
      * The collectors to report events to
      */
     CollectorRefs& collectors;
+
+    //! Optional trace collector for per-tick conformance snapshots (H-Cpp-3).
+    //! Null by default; set by ScenarioLoader when a trace is requested.
+    TraceCollector* traceCollector_ = nullptr;
 
     /**
      * Constructor
@@ -669,6 +674,7 @@ struct Peer
     void
     propose(Proposal const& pos)
     {
+        issue(Propose{.proposal = pos});
         share(pos);
     }
 
@@ -678,10 +684,12 @@ struct Peer
         return consensusParms;
     }
 
-    // Not interested in tracking consensus mode changes for now
     void
-    onModeChange(ConsensusMode, ConsensusMode)
+    onModeChange(ConsensusMode before, ConsensusMode after)
     {
+        if (before == after)
+            return;
+        issue(ModeChange{.from = before, .to = after});
     }
 
     // Share a message by broadcasting to all connected peers
@@ -831,8 +839,11 @@ struct Peer
 
         dest.push_back(p);
 
-        // Rely on consensus to decide whether to relay
-        return consensus.peerProposal(now(), Position{p});
+        issue(PeerProposalReceived{.from = p.nodeID(), .proposal = p});
+        bool const relay = consensus.peerProposal(now(), Position{p});
+        if (traceCollector_)
+            traceCollector_->onTick(id, scheduler.now(), buildTickSnapshot());
+        return relay;
     }
 
     bool
@@ -840,7 +851,12 @@ struct Peer
     {
         bool const inserted = txSets.insert(std::make_pair(txs.id(), txs)).second;
         if (inserted)
+        {
+            issue(TxSetReceived{.id = txs.id(), .size = txs.txs().size()});
             consensus.gotTxSet(now(), txs);
+            if (traceCollector_)
+                traceCollector_->onTick(id, scheduler.now(), buildTickSnapshot());
+        }
         // relay only if new
         return inserted;
     }
@@ -933,6 +949,8 @@ struct Peer
     timerEntry()
     {
         consensus.timerEntry(now());
+        if (traceCollector_)
+            traceCollector_->onTick(id, scheduler.now(), buildTickSnapshot());
         // only reschedule if not completed
         if (completedLedgers < targetLedgers)
             scheduler.in(parms().ledgerGRANULARITY, [this]() { timerEntry(); });
@@ -961,9 +979,15 @@ struct Peer
     void
     start()
     {
+        start(parms().ledgerGRANULARITY);
+    }
+
+    void
+    start(std::chrono::milliseconds initialDelay)
+    {
         // TODO: Expire validations less frequently?
         validations.expire(j);
-        scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
+        scheduler.in(initialDelay, [this]() { timerEntry(); });
         startRound();
     }
 
@@ -985,6 +1009,93 @@ struct Peer
     prevLedgerID() const
     {
         return consensus.prevLedgerID();
+    }
+
+    //-------------------------------------------------------------------------
+    // Build a conformance tick snapshot from current Consensus state (H-Cpp-3).
+    CsTickSnapshot
+    buildTickSnapshot()
+    {
+        using std::to_string;
+
+        CsTickSnapshot snap;
+        snap.phase = consensus.phase();
+        snap.mode = consensus.mode();
+        snap.lcl_id = to_string(consensus.prevLedgerID());
+        snap.lcl_seq = static_cast<std::uint32_t>(
+            std::stoul(to_string(lastClosedLedger.seq())));
+        snap.fully_validated_id = to_string(fullyValidatedLedger.id());
+        snap.prev_round_ms = consensus.prevRoundTime().count();
+        snap.converge_pct = consensus.convergePercent();
+
+        auto const& result = consensus.result();
+        if (result.has_value() && snap.phase != ConsensusPhase::Open)
+        {
+            auto const& pos = result->position;
+            if (!pos.isBowOut())
+            {
+                PositionEntry pe;
+                pe.prev = to_string(pos.prevLedger());
+                pe.tx_set = to_string(pos.position());
+                pe.close_time_secs = pos.closeTime().time_since_epoch().count();
+                pe.seq = pos.proposeSeq();
+                // CSF TaggedInteger types are not sha512Half-hashable;
+                // sign_hash is always "" (use --ignore in cross-diff).
+                pe.sign_hash = "";
+                snap.position = pe;
+            }
+        }
+
+        for (auto const& [tp, count] : consensus.closeTimes().peers)
+            snap.close_times.emplace_back(
+                tp.time_since_epoch().count(), count);
+
+        if (result.has_value())
+        {
+            using DispKey = Tx::ID;
+            using DispVal = DisputedTx<Tx, PeerID>;
+            std::vector<std::pair<DispKey, DispVal const*>> dv;
+            for (auto const& [txId, disp] : result->disputes)
+                dv.emplace_back(txId, &disp);
+            std::sort(
+                dv.begin(), dv.end(), [](auto const& a, auto const& b) {
+                    return a.first < b.first;
+                });
+
+            for (auto const& [txId, disp] : dv)
+            {
+                DisputeEntry de;
+                de.tx_id = to_string(txId);
+                de.ours = disp->getOurVote();
+                de.yays = disp->yays();
+                de.nays = disp->nays();
+                de.av_counter = disp->avalancheCounter();
+                de.vote_counter = disp->voteCounter();
+                switch (disp->avalancheState())
+                {
+                    case ConsensusParms::AvalancheState::Init:
+                        de.av_state = "Init";
+                        break;
+                    case ConsensusParms::AvalancheState::Mid:
+                        de.av_state = "Mid";
+                        break;
+                    case ConsensusParms::AvalancheState::Late:
+                        de.av_state = "Late";
+                        break;
+                    case ConsensusParms::AvalancheState::Stuck:
+                        de.av_state = "Stuck";
+                        break;
+                }
+                snap.disputes.push_back(std::move(de));
+            }
+        }
+
+        snap.validations_current = validations.sizeOfCurrentCache();
+        // currentTrusted() is not const; use trusted-for-LCL count instead.
+        snap.validations_trusted =
+            validations.numTrustedForLedger(lastClosedLedger.id());
+
+        return snap;
     }
 
     //-------------------------------------------------------------------------

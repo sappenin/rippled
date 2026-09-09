@@ -156,6 +156,43 @@ public:
         ourVote_ = o;
     }
 
+    // -----------------------------------------------------------------------
+    // Accessors added for the conformance harness (H-Cpp-1).
+    // These expose private state needed by TraceCollector tick snapshots.
+    // All are read-only and side-effect-free.
+
+    [[nodiscard]] int
+    yays() const
+    {
+        return yays_;
+    }
+
+    [[nodiscard]] int
+    nays() const
+    {
+        return nays_;
+    }
+
+    [[nodiscard]] ConsensusParms::AvalancheState
+    avalancheState() const
+    {
+        return avalancheState_;
+    }
+
+    [[nodiscard]] std::size_t
+    avalancheCounter() const
+    {
+        return avalancheCounter_;
+    }
+
+    [[nodiscard]] std::size_t
+    voteCounter() const
+    {
+        return currentVoteCounter_;
+    }
+
+    // -----------------------------------------------------------------------
+
     /**
      * Change a peer's vote
      *

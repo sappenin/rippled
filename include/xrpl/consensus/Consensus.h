@@ -435,6 +435,43 @@ public:
         return phase_;
     }
 
+    // -----------------------------------------------------------------------
+    // Accessors added for the conformance harness (H-Cpp-1).
+    // These expose private state needed by TraceCollector tick snapshots.
+    // All are read-only and side-effect-free.
+
+    [[nodiscard]] ConsensusMode
+    mode() const
+    {
+        return mode_.get();
+    }
+
+    [[nodiscard]] std::chrono::milliseconds
+    prevRoundTime() const
+    {
+        return prevRoundTime_;
+    }
+
+    [[nodiscard]] int
+    convergePercent() const
+    {
+        return convergePercent_;
+    }
+
+    [[nodiscard]] std::optional<Result> const&
+    result() const
+    {
+        return result_;
+    }
+
+    [[nodiscard]] ConsensusCloseTimes const&
+    closeTimes() const
+    {
+        return rawCloseTimes_;
+    }
+
+    // -----------------------------------------------------------------------
+
     /**
      * Get the Json state of the consensus process.
      *
