@@ -119,6 +119,22 @@ public:
     connect(Peer const& from, Peer const& to, duration const& delay = std::chrono::seconds{0});
 
     /**
+     * Set the one-way delay of an existing link.
+     *
+     * `connect` gives both directions of a link the same delay. This
+     * overrides the delay of the `from -> to` direction only, leaving the
+     * `to -> from` direction untouched, so asymmetric links can be modelled.
+     *
+     * Preconditions:
+     *
+     *     A link from `from` to `to` exists.
+     *
+     * @return `true` if the link existed and its delay was updated
+     */
+    bool
+    setDelay(Peer const& from, Peer const& to, duration const& delay);
+
+    /**
      * Break a link.
      *
      * Effects:
@@ -196,6 +212,17 @@ BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, duration const& de
     (void)result;
     assert(result);
     return true;
+}
+
+template <class Peer>
+inline bool
+BasicNetwork<Peer>::setDelay(Peer const& from, Peer const& to, duration const& delay)
+{
+    auto link = links_.edge(from, to);
+    if (!link)
+        return false;
+    link->delay = delay;
+    return links_.update(from, to, *link);
 }
 
 template <class Peer>

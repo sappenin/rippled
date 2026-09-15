@@ -141,7 +141,13 @@ main(int argc, char** argv)
         ? root["duration_ms"].asUInt()
         : 60000u;
 
-    sim->run(std::chrono::milliseconds(durationMs));
+    // Not `sim->run(duration)`: `Sim::run` calls `Peer::start()` on every peer,
+    // but `loadScenario` has already started them (`start(0ms)`, so the first
+    // timer fires at t=0 like the Rust sim). A second `start()` would add a
+    // second `timerEntry` chain per peer (two ticks per second, and an extra
+    // `shouldCloseLedger` check right after each `startRound`) plus a duplicate
+    // `startRound` at t=0. `targetLedgers` already defaults to "unbounded".
+    sim->scheduler.stepFor(std::chrono::milliseconds(durationMs));
 
     if (!tracePath.empty() && tracePath != "-")
         std::cerr << "Trace written to " << tracePath << "\n";

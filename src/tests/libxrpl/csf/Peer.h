@@ -438,6 +438,23 @@ struct Peer
     }
 
     /**
+     * Set the delay of the existing outbound link to `o` only
+     *
+     * `connect` gives both directions the same delay; this lets a scenario
+     * model an asymmetric link (e.g. a peer that is slow to send but fast to
+     * receive). The `o -> this` direction is left unchanged.
+     *
+     * @param o The peer we send to
+     * @param dur The new one-way delay for messages from this peer to `o`
+     * @return Whether the link existed and was updated
+     */
+    bool
+    setLinkDelay(Peer& o, SimDuration dur)
+    {
+        return net.setDelay(this, &o, dur);
+    }
+
+    /**
      * Remove a network connection
      *
      * Removes a connection between peers if one exists

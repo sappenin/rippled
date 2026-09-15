@@ -160,9 +160,13 @@ loadScenario(json::Value const& scenario, TraceCollector& trace)
             auto tit = peerById.find(to);
             if (fit != peerById.end() && tit != peerById.end())
             {
-                // Bidirectional
+                // BasicNetwork::connect creates both directions with the same
+                // delay and is a no-op if the link already exists (so the
+                // reverse edge's `delay_ms`, when it comes later in the list,
+                // would otherwise be silently ignored). Scenario edges are
+                // directed, so override the from -> to delay explicitly.
                 fit->second->connect(*tit->second, delay);
-                tit->second->connect(*fit->second, delay);
+                fit->second->setLinkDelay(*tit->second, delay);
             }
         }
     }

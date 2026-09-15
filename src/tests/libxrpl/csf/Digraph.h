@@ -90,6 +90,32 @@ public:
     }
 
     /**
+     * Replace the edge data of an existing edge
+     *
+     * @param source The source vertex
+     * @param target The target vertex
+     * @param e The new edge data
+     * @return true if the edge existed and was updated
+     *
+     * If source is not connected to target, this function does nothing.
+     */
+    bool
+    update(Vertex source, Vertex target, EdgeData e)
+    {
+        auto it = graph_.find(source);
+        if (it != graph_.end())
+        {
+            auto edgeIt = it->second.find(target);
+            if (edgeIt != it->second.end())
+            {
+                edgeIt->second = e;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Return edge data between two vertices
      *
      * @param source The source vertex
