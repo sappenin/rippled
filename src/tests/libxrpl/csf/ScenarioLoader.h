@@ -16,6 +16,56 @@
 
 namespace xrpl::test::csf {
 
+namespace detail {
+
+/** Convert a scenario millisecond timestamp to the csf NetClock.
+
+    Mirrors the unskewed part of Peer::now(): sim time + 86400 s so that
+    NetClock subtractions inside consensus stay positive.  The Rust sim's
+    `net_time` applies the same offset, so injected timestamps line up.
+*/
+inline NetClock::time_point
+scenarioMsToNetClock(std::uint64_t ms)
+{
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
+    return NetClock::time_point(
+        duration_cast<NetClock::duration>(milliseconds(ms) + 86400s));
+}
+
+/** Map a scenario ledger-id string onto a csf Ledger::ID.
+
+    "GENESIS" and an all-zero hex string both denote the genesis ledger
+    (Ledger::ID{0}); a decimal string is taken literally (csf ledger IDs
+    are TaggedInteger<uint32_t>); anything else is hashed so that distinct
+    labels stay distinct without colliding with real ledger IDs by accident.
+*/
+inline Ledger::ID
+scenarioLedgerId(std::string const& s)
+{
+    if (s == "GENESIS" || s.empty() ||
+        std::ranges::all_of(s, [](char c) { return c == '0'; }))
+        return Ledger::ID{0};
+    if (std::ranges::all_of(s, [](unsigned char c) { return std::isdigit(c); }))
+        return Ledger::ID{static_cast<std::uint32_t>(std::stoul(s))};
+    return Ledger::ID{static_cast<std::uint32_t>(std::hash<std::string>{}(s))};
+}
+
+/** Map an opaque scenario tx-set label onto a csf TxSet::ID.
+
+    Same deterministic std::hash scheme `submit_tx` uses for tx labels.  A
+    label never equals the ID of a real TxSet, so a synthetic position (e.g.
+    "byzantine_empty") disputes every honest position — matching the Rust
+    sim, whose SimTxSetId carries the raw label.
+*/
+inline TxSet::ID
+scenarioTxSetId(std::string const& label)
+{
+    return static_cast<TxSet::ID>(std::hash<std::string>{}(label));
+}
+
+}  // namespace detail
+
 /** Load a scenario from a JSON value and configure a Sim for it.
 
     The returned Sim has all peers created, topology wired, events scheduled,
@@ -199,8 +249,114 @@ loadScenario(json::Value const& scenario, TraceCollector& trace)
                     peer->share(leaveProposal);
                 });
             }
-            // Other event kinds (advance_clock, inject_validation, etc.)
-            // are not implemented in this version.
+            else if (kind == "inject_proposal")
+            {
+                // Deliver a synthetic proposal from `proposer` straight into
+                // `node`, bypassing the network layer.  Runs the same
+                // Peer::handle(Proposal) path a network delivery would, so
+                // the receiver applies its trust check, per-ledger position
+                // dedup, emits peer_proposal_received, and lets the engine's
+                // per-peer propose-seq monotonicity check drop duplicates.
+                std::uint32_t const nodeId = ev["node"].asUInt();
+                std::uint32_t const proposer = ev["proposer"].asUInt();
+                std::uint32_t const seq = ev["seq"].asUInt();
+                TxSet::ID const txSetId =
+                    detail::scenarioTxSetId(ev["tx_set"].asString());
+                Ledger::ID const prevLedger =
+                    detail::scenarioLedgerId(ev["prev_ledger"].asString());
+                NetClock::time_point const closeTime =
+                    detail::scenarioMsToNetClock(ev["close_time"].asUInt());
+
+                auto const nit = peerById.find(nodeId);
+                auto const pit = peerById.find(proposer);
+                if (nit == peerById.end() || pit == peerById.end())
+                    continue;
+
+                sim->scheduler.at(
+                    absTime,
+                    [peer = nit->second,
+                     proposerId = pit->second->id,
+                     seq,
+                     txSetId,
+                     prevLedger,
+                     closeTime,
+                     tMs]() {
+                        // seenTime uses the unskewed sim clock, like the
+                        // Rust sim's `net_time(sim_ms)`.
+                        Proposal const p(
+                            prevLedger,
+                            seq,
+                            txSetId,
+                            closeTime,
+                            detail::scenarioMsToNetClock(tMs),
+                            proposerId);
+                        peer->handle(p);
+                    });
+            }
+            else if (kind == "inject_validation")
+            {
+                // Deliver a synthetic validation from `validator` straight
+                // into `node`.  Runs Peer::handle(Validation): trust check,
+                // then Validations::add, whose isCurrent() window decides
+                // acceptance.  Emits a `validation_received` trace event
+                // carrying the outcome so it can be cross-diffed against the
+                // Rust sim's InjectValidation handling.
+                std::uint32_t const nodeId = ev["node"].asUInt();
+                std::uint32_t const validator = ev["validator"].asUInt();
+                std::string const ledgerStr = ev["ledger"].asString();
+                std::uint32_t const seq = ev["seq"].asUInt();
+                std::uint64_t const signTimeMs =
+                    ev.isMember("sign_time") ? ev["sign_time"].asUInt() : 0u;
+
+                auto const nit = peerById.find(nodeId);
+                auto const vit = peerById.find(validator);
+                if (nit == peerById.end() || vit == peerById.end())
+                    continue;
+
+                sim->scheduler.at(
+                    absTime,
+                    [peer = nit->second,
+                     validatorId = vit->second->id,
+                     ledgerStr,
+                     ledgerId = detail::scenarioLedgerId(ledgerStr),
+                     seq,
+                     signTimeMs,
+                     &trace]() {
+                        NetClock::time_point const signTime =
+                            detail::scenarioMsToNetClock(signTimeMs);
+                        Validation const v{
+                            ledgerId,
+                            Ledger::Seq{seq},
+                            signTime,
+                            NetClock::time_point{},  // seen: set on add
+                            PeerKey{validatorId, 0},
+                            validatorId,
+                            /*full=*/true};
+
+                        // Classify a rejection the same way Validations::isCurrent
+                        // does, evaluated against the receiver's clock.
+                        ValidationParms const vp{};
+                        NetClock::time_point const now = peer->now();
+                        std::string reason;
+                        if (!(signTime < now + vp.validationCurrentWall))
+                            reason = "too_early";
+                        else if (!(signTime > now - vp.validationCurrentEarly))
+                            reason = "too_late";
+
+                        bool const accepted = peer->handle(v);
+                        trace.onValidationReceived(
+                            peer->id,
+                            peer->scheduler.now(),
+                            validatorId,
+                            ledgerStr,
+                            seq,
+                            signTimeMs,
+                            accepted,
+                            accepted ? std::string{} : reason);
+                    });
+            }
+            // Other event kinds (advance_clock, etc.) are not implemented in
+            // this version.
         }
     }
 

@@ -222,6 +222,33 @@ public:
         emit(v);
     }
 
+    // `validation_received`: emitted by ScenarioLoader's `inject_validation`
+    // handler (csf has no event struct for validation receipt; network-delivered
+    // validations emit nothing, matching the Rust sim).  `reason` is only
+    // written when non-empty, mirroring the Rust emitter.
+    void
+    onValidationReceived(
+        PeerID who,
+        SimTime when,
+        PeerID validator,
+        std::string const& ledger,
+        std::uint32_t seq,
+        std::uint64_t signTimeMs,
+        bool accepted,
+        std::string const& reason)
+    {
+        json::Value v = baseEvent(who, when, "validation_received");
+        v["validator"] = static_cast<json::UInt>(peerToUInt(validator));
+        v["ledger"] = ledger;
+        v["seq"] = static_cast<json::UInt>(seq);
+        v["sign_time"] = static_cast<json::UInt>(
+            static_cast<std::uint32_t>(signTimeMs));
+        v["accepted"] = accepted;
+        if (!reason.empty())
+            v["reason"] = reason;
+        emit(v);
+    }
+
     // No-op for all other events (Share, Relay, Receive, SubmitTx, StartRound,
     // WrongPrevLedger) — not part of the §4.2 trace surface.
     template <class E>
