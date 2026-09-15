@@ -111,6 +111,15 @@ loadScenario(json::Value const& scenario, TraceCollector& trace)
         if (pc.isMember("processing_delay_ms"))
             peer->delays.ledgerAccept =
                 std::chrono::milliseconds(pc["processing_delay_ms"].asUInt());
+
+        // Peer::clockSkew shifts only the NetClock returned by Peer::now()
+        // (close times, proposal/validation sign times, isCurrent windows);
+        // the steady clock driving roundTime stays the shared scheduler
+        // clock. clockSkew is whole seconds: duration_cast truncates toward
+        // zero, and the Rust sim (`SimPeer::net_now`) does the same.
+        if (pc.isMember("clock_offset_ms"))
+            peer->clockSkew = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::milliseconds(pc["clock_offset_ms"].asInt()));
     }
 
     // ── Trust (UNL) setup ─────────────────────────────────────────────────────
