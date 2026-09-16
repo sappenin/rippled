@@ -464,6 +464,18 @@ public:
         return result_;
     }
 
+    /** The ledger consensus is currently building on.
+
+        Unlike the adaptor's own last-closed ledger, this is updated by
+        handleWrongLedger when we switch to the network's preferred ledger,
+        so it always describes the ledger prevLedgerID() names.
+    */
+    [[nodiscard]] Ledger_t const&
+    previousLedger() const
+    {
+        return previousLedger_;
+    }
+
     [[nodiscard]] ConsensusCloseTimes const&
     closeTimes() const
     {

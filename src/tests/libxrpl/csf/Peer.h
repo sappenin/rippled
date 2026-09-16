@@ -1039,8 +1039,12 @@ struct Peer
         snap.phase = consensus.phase();
         snap.mode = consensus.mode();
         snap.lcl_id = to_string(consensus.prevLedgerID());
+        // Read the seq from the ledger consensus is building on, not from
+        // lastClosedLedger: handleWrongLedger updates the former only, so
+        // after a ledger switch lastClosedLedger.seq() describes a
+        // different ledger than lcl_id names.
         snap.lcl_seq = static_cast<std::uint32_t>(
-            std::stoul(to_string(lastClosedLedger.seq())));
+            std::stoul(to_string(consensus.previousLedger().seq())));
         snap.fully_validated_id = to_string(fullyValidatedLedger.id());
         snap.prev_round_ms = consensus.prevRoundTime().count();
         snap.converge_pct = consensus.convergePercent();
