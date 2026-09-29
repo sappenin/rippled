@@ -300,7 +300,14 @@ if(xrpld)
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
-    target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+    target_link_libraries(
+        xrpld
+        Xrpl::boost
+        Xrpl::opts
+        Xrpl::libs
+        xrpl.libxrpl
+        rpcspec::rpcspec
+    )
     exclude_if_included(xrpld)
 
     # rippled-conformance: conformance harness runner (Track B)
