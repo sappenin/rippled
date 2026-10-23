@@ -1116,6 +1116,15 @@ struct Peer
         snap.validations_trusted =
             validations.numTrustedForLedger(lastClosedLedger.id());
 
+        // tick.trie: the trie as it stands (no flush / acquired fold), matching
+        // the Rust runner's SimAdaptor::on_tick.
+        auto const [trieJson, preferred] = validations.getTrieSnapshot();
+        if (preferred)
+            snap.trie.preferred = std::make_pair(
+                to_string(preferred->id),
+                static_cast<std::uint32_t>(preferred->seq));
+        flattenTrieNode(trieJson["trie"], snap.trie.nodes);
+
         return snap;
     }
 

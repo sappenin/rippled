@@ -39,6 +39,62 @@ struct PositionEntry {
     std::string sign_hash;  // lowercase hex
 };
 
+struct TrieNodeEntry {
+    std::uint32_t span_start;
+    std::uint32_t span_end;
+    std::string tip_id;
+    std::uint32_t tip_support;
+    std::uint32_t branch_support;
+};
+
+struct TrieEntry {
+    // nullopt when the trie is empty
+    std::optional<std::pair<std::string, std::uint32_t>> preferred;
+    // depth-first preorder, siblings sorted by (branch_support desc, tip_id asc)
+    std::vector<TrieNodeEntry> nodes;
+};
+
+/** Flatten `LedgerTrie::getJson()`'s nested node shape (`span` as
+ *  `"<tip>[start,end)"`, `tipSupport`, `branchSupport`, `children[]`) into
+ *  §4.1's preorder `nodes[]`, sorting siblings by `(branch_support desc,
+ *  tip_id asc)` on the id string.  Not `getPreferred`'s own tie-break
+ *  (`startID` desc): just a stable emission order the Rust runner shares.
+ */
+inline void
+flattenTrieNode(json::Value const& node, std::vector<TrieNodeEntry>& out)
+{
+    TrieNodeEntry e;
+    std::string const span = node["span"].asString();
+    auto const lb = span.rfind('[');
+    auto const comma = span.rfind(',');
+    e.tip_id = span.substr(0, lb);
+    e.span_start = static_cast<std::uint32_t>(
+        std::stoul(span.substr(lb + 1, comma - lb - 1)));
+    e.span_end = static_cast<std::uint32_t>(
+        std::stoul(span.substr(comma + 1, span.size() - comma - 2)));
+    e.tip_support = node["tipSupport"].asUInt();
+    e.branch_support = node["branchSupport"].asUInt();
+    out.push_back(std::move(e));
+
+    if (!node.isMember("children"))
+        return;
+    json::Value const& cs = node["children"];
+    std::vector<json::Value const*> kids;
+    for (json::UInt i = 0; i < cs.size(); ++i)
+        kids.push_back(&cs[i]);
+    std::sort(kids.begin(), kids.end(), [](json::Value const* a, json::Value const* b) {
+        auto const ba = (*a)["branchSupport"].asUInt();
+        auto const bb = (*b)["branchSupport"].asUInt();
+        if (ba != bb)
+            return ba > bb;
+        std::string const sa = (*a)["span"].asString();
+        std::string const sb = (*b)["span"].asString();
+        return sa.substr(0, sa.rfind('[')) < sb.substr(0, sb.rfind('['));
+    });
+    for (auto const* kid : kids)
+        flattenTrieNode(*kid, out);
+}
+
 struct CsTickSnapshot {
     ConsensusPhase phase;
     ConsensusMode mode;
@@ -54,6 +110,7 @@ struct CsTickSnapshot {
     std::vector<DisputeEntry> disputes;
     std::size_t validations_current;
     std::size_t validations_trusted;
+    TrieEntry trie;
 };
 
 // ── TraceCollector ────────────────────────────────────────────────────────────
@@ -121,7 +178,31 @@ public:
         }
         v["disputes"] = disputes;
 
-        v["trie"] = json::Value();
+        json::Value trie(json::ValueType::Object);
+        if (snap.trie.preferred)
+        {
+            trie["preferred"] = snap.trie.preferred->first;
+            trie["preferred_seq"] =
+                static_cast<json::UInt>(snap.trie.preferred->second);
+        }
+        else
+        {
+            trie["preferred"] = json::Value();
+            trie["preferred_seq"] = json::Value();
+        }
+        json::Value nodes(json::ValueType::Array);
+        for (auto const& tn : snap.trie.nodes)
+        {
+            json::Value ne(json::ValueType::Object);
+            ne["span_start"] = static_cast<json::UInt>(tn.span_start);
+            ne["span_end"] = static_cast<json::UInt>(tn.span_end);
+            ne["tip_id"] = tn.tip_id;
+            ne["tip_support"] = static_cast<json::UInt>(tn.tip_support);
+            ne["branch_support"] = static_cast<json::UInt>(tn.branch_support);
+            nodes.append(ne);
+        }
+        trie["nodes"] = nodes;
+        v["trie"] = trie;
 
         json::Value vals(json::ValueType::Object);
         vals["current"] = static_cast<json::UInt>(

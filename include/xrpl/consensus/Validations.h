@@ -837,6 +837,19 @@ public:
     }
 
     /**
+     * Conformance harness (`csf/TraceCollector.h`): the trie's JSON and its
+     * preferred tip exactly as they stand. Unlike `withTrie`, this neither
+     * flushes stale validations nor folds in newly acquired ledgers, so a
+     * snapshot never changes the state it observes.
+     */
+    std::pair<json::Value, std::optional<SpanTip<Ledger>>>
+    getTrieSnapshot() const
+    {
+        std::scoped_lock const lock{mutex_};
+        return {trie_.getJson(), trie_.getPreferred(localSeqEnforcer_.largest())};
+    }
+
+    /**
      * Return the sequence number and ID of the preferred working ledger
      *
      * A ledger is preferred if it has more support amongst trusted validators
