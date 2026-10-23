@@ -470,7 +470,7 @@ public:
         handleWrongLedger when we switch to the network's preferred ledger,
         so it always describes the ledger prevLedgerID() names.
     */
-    [[nodiscard]] Ledger_t const&
+    [[nodiscard]] LedgerT const&
     previousLedger() const
     {
         return previousLedger_;
